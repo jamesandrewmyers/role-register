@@ -1,3 +1,5 @@
+#Pre-Alpha with much TBD#
+
 # RoleRegister
 
 RoleRegister is a **self-contained, local-first job application assistant**.  
