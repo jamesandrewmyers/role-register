@@ -1,15 +1,9 @@
-// lib/db.ts
 import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import * as schema from "@/lib/schema";
 
-const db = new Database("app.db");
+// Point to dev database (for dev put it under /data)
+const sqlite = new Database("data/role_register.db");
 
-// Ensure table exists
-db.prepare(`
-  CREATE TABLE IF NOT EXISTS notes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    content TEXT,
-    createdAt TEXT
-  )
-`).run();
-
-export default db;
+// Wrap with Drizzle
+export const db = drizzle(sqlite, { schema });
