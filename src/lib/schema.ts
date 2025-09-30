@@ -1,6 +1,20 @@
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 // -----------------------------
+// data_received
+// -----------------------------
+export const dataReceived = sqliteTable("data_received", {
+  id: text("id").primaryKey(), // UUID
+  url: text("url").notNull(),
+  title: text("title").notNull(),
+  html: text("html").notNull(),
+  text: text("text").notNull(),
+  receivedAt: text("received_at").default("CURRENT_TIMESTAMP"),
+  processed: text("processed").default("false"), // "false", "true", "failed"
+  processingNotes: text("processing_notes"), // error messages or processing info
+});
+
+// -----------------------------
 // role_company
 // -----------------------------
 export const roleCompany = sqliteTable("role_company", {

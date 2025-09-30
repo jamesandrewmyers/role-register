@@ -1,29 +1,45 @@
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
+import { db } from "@/lib/db";
+import { dataReceived } from "@/lib/schema";
+import { randomUUID } from "crypto";
 
-// Example: proxy HTML from a remote site
 export async function POST(request: Request) {
+  try {
     const job = await request.json();
-    const url = job.url;
-    const title = job.title;
-    const html = job.html;
-    const text = job.text;
+    const { url, title, html, text } = job;
 
-  const cheerioHtml = cheerio.load(html);
-  cheerioHtml("a").each((index, element) => {
-    cheerioHtml(element).attr("onclick", "event.preventDefault(); event.stopPropagation(); console.log('Clicked:', this.text); return false;");
-  });
-  cheerioHtml("div").each((index, element) => {
-    cheerioHtml(element).attr("onclick", "event.preventDefault(); event.stopPropagation(); console.log('Clicked: div'); return false;");
-  });
-  cheerioHtml("span").each((index, element) => {
-    cheerioHtml(element).attr("onclick", "event.preventDefault(); event.stopPropagation(); console.log('Clicked: span'); return false;");
-  });
-  cheerioHtml("button").each((index, element) => {
-    cheerioHtml(element).attr("onclick", "event.preventDefault(); event.stopPropagation(); console.log('Clicked: button'); return false;");
-  });
+    // Validate required fields
+    if (!url || !title || !html || !text) {
+      return new Response("Missing required fields: url, title, html, text", { status: 400 });
+    }
 
-  const newHtml = cheerioHtml.html();
-  return new Response("Success", { status: 200 });
+    // Log the length of received data
+    console.log("Received data lengths:", {
+      url: url.length,
+      title: title.length,
+      html: html.length,
+      text: text.length
+    });
 
+    // Insert into data_received table
+    const recordId = randomUUID();
+    await db.insert(dataReceived).values({
+      id: recordId,
+      url,
+      title,
+      html,
+      text,
+      processed: "false"
+    });
+
+    return new Response(JSON.stringify({ success: true, id: recordId }), { 
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+
+  } catch (error) {
+    console.error("Error inserting data:", error);
+    return new Response("Internal server error", { status: 500 });
+  }
 }
