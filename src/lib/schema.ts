@@ -1,4 +1,15 @@
-import { sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+
+export const eventInfo = sqliteTable("event_info", {
+  id: text("id").primaryKey(), // UUID
+  type: text("type").notNull(), // e.g. "processHtml"
+  payload: text("payload").notNull(), // JSON string
+  status: text("status").notNull().default("pending"), // pending | processing | done | error
+  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  updatedAt: text("updated_at"),
+  error: text("error"), // optional error message
+  retries: integer("retries").default(0),
+});
 
 // -----------------------------
 // data_received
