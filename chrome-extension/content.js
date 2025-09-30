@@ -39,9 +39,20 @@ function extractJob() {
     };
   }
   
-  // Listen for popup requests
+  // Handle messages from background script
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.action === "getJobContent") {
       sendResponse(extractJob());
+    } else if (msg.action === "extractAndSend") {
+      // Extract job data and send it back to background script
+      const jobData = extractJob();
+      
+      if (!jobData.html || jobData.html.length < 10) {
+        sendResponse({ success: false, error: "No job content found on this page" });
+        return;
+      }
+      
+      // Send job data back to background script for API call
+      sendResponse({ success: true, jobData: jobData });
     }
   });  

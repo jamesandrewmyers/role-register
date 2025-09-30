@@ -3,14 +3,16 @@
     "name": "Job Capture to MyApp",
     "version": "1.0",
     "description": "Send job postings from LinkedIn/Indeed to your local Personal App Assistant.",
-    "permissions": ["activeTab", "scripting"],
+    "permissions": ["activeTab", "scripting", "notifications"],
     "action": {
-      "default_popup": "popup.html",
       "default_icon": {
         "16": "icon16.png",
         "48": "icon48.png",
         "128": "icon128.png"
       }
+    },
+    "background": {
+      "service_worker": "background.js"
     },
     "host_permissions": [
         "http://localhost:3000/*"
