@@ -253,6 +253,11 @@ dist/
 *.tgz
 *.tar.gz
 
+# Compiled TypeScript worker files
+src/**/*.js
+src/**/*.js.map
+worker.js
+
 # Local development files
 .local/
 local/
