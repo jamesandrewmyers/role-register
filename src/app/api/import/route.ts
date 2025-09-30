@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 import { db } from "@/lib/db";
 import { dataReceived } from "@/lib/schema";
+import { enqueueEvent } from "@/lib/event";
 import { randomUUID } from "crypto";
 
 export async function POST(request: Request) {
@@ -33,7 +34,18 @@ export async function POST(request: Request) {
       processed: "false"
     });
 
-    return new Response(JSON.stringify({ success: true, id: recordId }), { 
+    // Create event to trigger background processing
+    const event = await enqueueEvent("processHtml", {
+      dataReceivedId: recordId,
+      url,
+      title
+    });
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      id: recordId,
+      eventId: event.id 
+    }), { 
       status: 200,
       headers: { "Content-Type": "application/json" }
     });

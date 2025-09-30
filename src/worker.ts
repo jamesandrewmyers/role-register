@@ -35,7 +35,7 @@ parentPort.on("message", async (eventId: string) => {
     // 🧑‍💻 Do work based on event type
     if (job.type === "processHtml") {
       const payload = JSON.parse(job.payload);
-      console.log("Processing HTML for listing", payload.listingId);
+      console.log("Processing HTML for data_received ID: ", payload.dataReceivedId);
 
       // TODO: implement actual HTML parsing/processing here
       await new Promise((resolve) => setTimeout(resolve, 1000)); // simulate work
