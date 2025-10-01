@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import AdminDialog from "@/components/AdminDialog";
+import RoleListingDetails from "@/components/RoleListingDetails";
+import DataReceivedDetails from "@/components/DataReceivedDetails";
+import EventInfoDetails from "@/components/EventInfoDetails";
 
 interface DataReceived {
   id: string;
@@ -40,14 +43,15 @@ interface DashboardData {
 }
 
 type ViewType = "roleListings" | "dataReceived" | "eventInfo";
-type DetailItem = DataReceived | EventInfo | RoleListing | null;
 
 export default function Page() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedView, setSelectedView] = useState<ViewType>("roleListings");
-  const [detailItem, setDetailItem] = useState<DetailItem>(null);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<RoleListing | null>(null);
+  const [selectedDataReceived, setSelectedDataReceived] = useState<DataReceived | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventInfo | null>(null);
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -84,55 +88,6 @@ export default function Page() {
     error: "bg-red-500/20 text-red-300 border-red-500/30",
   };
 
-  const renderDetailDialog = () => {
-    if (!detailItem) return null;
-
-    const entries = Object.entries(detailItem).filter(([key, value]) => value !== undefined && value !== null);
-
-    return (
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-        onClick={() => setDetailItem(null)}
-      >
-        <div
-          className="bg-gradient-to-br from-slate-800 to-purple-900 rounded-2xl border border-purple-400/30 shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="sticky top-0 bg-gradient-to-br from-slate-800 to-purple-900 border-b border-purple-400/30 p-6 flex justify-between items-center">
-            <h3 className="text-2xl font-bold text-white">Details</h3>
-            <button
-              onClick={() => setDetailItem(null)}
-              className="text-purple-300 hover:text-white transition-colors text-2xl leading-none"
-            >
-              ×
-            </button>
-          </div>
-          <div className="p-6 space-y-3">
-            {entries.map(([key, value]) => (
-              <div
-                key={key}
-                className="bg-white/5 rounded-lg p-4 border border-white/10"
-              >
-                <div className="text-purple-300 text-sm font-semibold mb-1 uppercase tracking-wide">
-                  {key.replace(/([A-Z])/g, ' $1').trim()}
-                </div>
-                <div className="text-white break-words">
-                  {typeof value === 'string' && value.length > 200 ? (
-                    <div className="text-sm font-mono bg-black/20 p-3 rounded overflow-x-auto max-h-40 overflow-y-auto">
-                      {value}
-                    </div>
-                  ) : (
-                    String(value)
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderContent = () => {
     switch (selectedView) {
       case "roleListings":
@@ -144,7 +99,7 @@ export default function Page() {
                 {data.roleListings.map((listing) => (
                   <div
                     key={listing.id}
-                    onClick={() => setDetailItem(listing)}
+                    onClick={() => setSelectedListing(listing)}
                     className="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
                   >
                     <h3 className="text-white font-semibold mb-2">{listing.title}</h3>
@@ -170,7 +125,7 @@ export default function Page() {
                 {data.dataReceived.map((item) => (
                   <div
                     key={item.id}
-                    onClick={() => setDetailItem(item)}
+                    onClick={() => setSelectedDataReceived(item)}
                     className="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -218,7 +173,7 @@ export default function Page() {
                 {data.eventInfo.map((event) => (
                   <div
                     key={event.id}
-                    onClick={() => setDetailItem(event)}
+                    onClick={() => setSelectedEvent(event)}
                     className="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -329,7 +284,9 @@ export default function Page() {
         </section>
       </div>
 
-      {renderDetailDialog()}
+      <RoleListingDetails listing={selectedListing} onClose={() => setSelectedListing(null)} />
+      <DataReceivedDetails item={selectedDataReceived} onClose={() => setSelectedDataReceived(null)} />
+      <EventInfoDetails event={selectedEvent} onClose={() => setSelectedEvent(null)} />
       <AdminDialog isOpen={showAdmin} onClose={() => setShowAdmin(false)} />
     </main>
   );
