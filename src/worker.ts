@@ -1,7 +1,8 @@
 import { parentPort } from "worker_threads";
 import { db } from "@/lib/db";
-import { eventInfo } from "@/lib/schema";
+import { eventInfo, dataReceived } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import * as cheerio from "cheerio";
 
 if (!parentPort) {
   throw new Error("Worker must be started with a parentPort");
@@ -37,8 +38,60 @@ parentPort.on("message", async (eventId: string) => {
       const payload = JSON.parse(job.payload);
       console.log("Processing HTML for data_received ID: ", payload.dataReceivedId);
 
-      // TODO: implement actual HTML parsing/processing here
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // simulate work
+      const dataRecord = db
+        .select()
+        .from(dataReceived)
+        .where(eq(dataReceived.id, payload.dataReceivedId))
+        .get();
+    
+      if (!dataRecord) {
+        console.log(`Data record not found: ${payload.dataReceivedId}`);
+        throw new Error(`Data record not found: ${payload.dataReceivedId}`);
+      }
+
+      const url = new URL(dataRecord.url);
+      const $ = cheerio.load(dataRecord.html);
+      
+      let parsingLog = `[Parser] Processing ${dataRecord.url}\n`;
+
+      if (url.hostname === "www.linkedin.com") {
+        parsingLog += "[LinkedIn Parser] Parsing job posting...\n";
+
+        const jobTitle =
+          $("#job-title").text().trim() ||
+          $(".jobs-unified-top-card__job-title").first().text().trim() ||
+          "";
+
+        const companyName =
+          $("#company-name").text().trim() ||
+          $(".jobs-unified-top-card__subtitle-primary-grouping").first().text().trim() ||
+          $(".jobs-unified-top-card__company-name").first().text().trim() ||
+          "";
+
+        const jobLocation =
+          $("#job-location").text().trim() ||
+          $(".jobs-unified-top-card__bullet").first().text().trim() ||
+          $(".jobs-unified-top-card__workplace-type").first().text().trim() ||
+          "";
+
+        parsingLog += `[LinkedIn Parser] Job Title: ${jobTitle}\n`;
+        parsingLog += `[LinkedIn Parser] Company Name: ${companyName}\n`;
+        parsingLog += `[LinkedIn Parser] Job Location: ${jobLocation}\n`;
+      } else {
+        parsingLog += `[Parser] No parser configured for hostname: ${url.hostname}\n`;
+      }
+
+      // Store parsing log in processing notes for reliable verification
+      db.update(dataReceived)
+        .set({ 
+          processingNotes: parsingLog,
+          processed: "true" 
+        })
+        .where(eq(dataReceived.id, payload.dataReceivedId))
+        .run();
+
+      // Also log to console (may be buffered/unreliable)
+      console.log(parsingLog);
     }
 
     // Mark as done

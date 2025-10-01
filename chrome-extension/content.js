@@ -3,12 +3,10 @@ function extractJob() {
     let desc = null;
     let selectorUsed = "none";
     
-    // LinkedIn selectors
+    // LinkedIn selectors -- single page neeeds "job-view-layout job-details"
     if (location.hostname.includes("linkedin.com")) {
-      desc = document.querySelector(".jobs-description__content") ||
-             document.querySelector(".job-details-jobs-unified-top-card__container") ||
-             document.querySelector(".jobs-box__html-content") ||
-             document.querySelector("[data-module-id='job-details']");
+      desc = document.querySelector(".job-details-jobs-unified-top-card__container--two-pane") ||
+             document.querySelector('[class="job-view-layout jobs-details"]');
       selectorUsed = "linkedin";
     }
     
