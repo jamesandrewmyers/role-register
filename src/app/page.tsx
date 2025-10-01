@@ -46,6 +46,7 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const [selectedView, setSelectedView] = useState<ViewType>("roleListings");
   const [detailItem, setDetailItem] = useState<DetailItem>(null);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -253,12 +254,64 @@ export default function Page() {
     }
   };
 
+  const renderAdminDialog = () => {
+    if (!showAdmin) return null;
+
+    return (
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        onClick={() => setShowAdmin(false)}
+      >
+        <div
+          className="bg-gradient-to-br from-slate-800 to-purple-900 rounded-2xl border border-purple-400/30 shadow-2xl max-w-4xl w-full h-[600px] flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">Admin Screen</h2>
+            <p className="text-purple-300 text-lg">TBD</p>
+          </div>
+          <button
+            onClick={() => setShowAdmin(false)}
+            className="absolute top-6 right-6 text-purple-300 hover:text-white transition-colors text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        <header className="text-center mb-12">
+        <header className="text-center mb-12 relative">
           <h1 className="text-5xl font-bold text-white mb-2">Role Register</h1>
           <p className="text-purple-300 text-lg">Job Application Tracking Dashboard</p>
+          <button
+            onClick={() => setShowAdmin(true)}
+            className="absolute top-0 right-0 p-3 bg-white/10 hover:bg-white/20 rounded-full border border-white/20 transition-all group"
+            aria-label="Admin settings"
+          >
+            <svg
+              className="w-6 h-6 text-purple-300 group-hover:text-white transition-colors group-hover:rotate-90 transform duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </button>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -303,6 +356,7 @@ export default function Page() {
       </div>
 
       {renderDetailDialog()}
+      {renderAdminDialog()}
     </main>
   );
 }
