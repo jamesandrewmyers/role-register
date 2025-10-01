@@ -1,12 +1,13 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
 export const eventInfo = sqliteTable("event_info", {
   id: text("id").primaryKey(), // UUID
   type: text("type").notNull(), // e.g. "processHtml"
   payload: text("payload").notNull(), // JSON string
   status: text("status").notNull().default("pending"), // pending | processing | done | error
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
-  updatedAt: text("updated_at"),
+  createdAt: integer("created_at").notNull().default(sql`(strftime('%s','now'))`),
+  updatedAt: integer("updated_at"),
   error: text("error"), // optional error message
   retries: integer("retries").default(0),
 });
@@ -20,7 +21,7 @@ export const dataReceived = sqliteTable("data_received", {
   title: text("title").notNull(),
   html: text("html").notNull(),
   text: text("text").notNull(),
-  receivedAt: text("received_at").default("CURRENT_TIMESTAMP"),
+  receivedAt: integer("received_at").notNull().default(sql`(strftime('%s','now'))`),
   processed: text("processed").default("false"), // "false", "true", "failed"
   processingNotes: text("processing_notes"), // error messages or processing info
 });
@@ -32,7 +33,7 @@ export const roleCompany = sqliteTable("role_company", {
   id: text("id").primaryKey(), // UUID
   name: text("name").notNull(),
   website: text("website"),
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  createdAt: integer("created_at").notNull().default(sql`(strftime('%s','now'))`),
 });
 
 // -----------------------------
@@ -44,7 +45,7 @@ export const roleListing = sqliteTable("role_listing", {
     .references(() => roleCompany.id, { onDelete: "cascade" }), // if company removed → listings removed
   title: text("title").notNull(),
   description: text("description").notNull(),
-  capturedAt: text("captured_at").default("CURRENT_TIMESTAMP"),
+  capturedAt: integer("captured_at").notNull().default(sql`(strftime('%s','now'))`),
 });
 
 // -----------------------------
@@ -56,8 +57,8 @@ export const roleApplication = sqliteTable("role_application", {
     .notNull()
     .references(() => roleListing.id, { onDelete: "cascade" }), // if listing removed → applications removed
   status: text("status").notNull(), // "not_applying", "in_progress", "rejected", "offered", "declined"
-  appliedAt: text("applied_at"),
-  updatedAt: text("updated_at"),
+  appliedAt: integer("applied_at"),
+  updatedAt: integer("updated_at"),
 });
 
 // -----------------------------
@@ -81,7 +82,7 @@ export const roleAttachment = sqliteTable("role_attachment", {
     .references(() => roleListing.id, { onDelete: "cascade" }), // if listing removed → attachments removed
   type: text("type").notNull(), // "document", "link", "note"
   pathOrUrl: text("path_or_url"),
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  createdAt: integer("created_at").notNull().default(sql`(strftime('%s','now'))`),
 });
 
 // -----------------------------
@@ -109,6 +110,6 @@ export const roleEvent = sqliteTable("role_event", {
     onDelete: "cascade", // if application removed → its events removed
   }),
   title: text("title").notNull(), // e.g. "Phone Screen"
-  eventDate: text("event_date"), // ISO string
+  eventDate: integer("event_date"), // Unix timestamp
   notes: text("notes"),
 });
