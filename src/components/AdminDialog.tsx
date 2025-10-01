@@ -1,11 +1,35 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import TableViewer from "./TableViewer";
+
 interface AdminDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
+  const [tables, setTables] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    async function fetchTables() {
+      try {
+        const res = await fetch("/api/admin/tables");
+        const data = await res.json();
+        setTables(data.tables || []);
+      } catch (error) {
+        console.error("Failed to fetch tables:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchTables();
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -14,19 +38,29 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
       onClick={onClose}
     >
       <div
-        className="bg-gradient-to-br from-slate-800 to-purple-900 rounded-2xl border border-purple-400/30 shadow-2xl max-w-4xl w-full h-[600px] flex items-center justify-center"
+        className="bg-gradient-to-br from-slate-800 to-purple-900 rounded-2xl border border-purple-400/30 shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Admin Screen</h2>
-          <p className="text-purple-300 text-lg">TBD</p>
+        <div className="sticky top-0 bg-gradient-to-br from-slate-800 to-purple-900 border-b border-purple-400/30 p-6 flex justify-between items-center">
+          <h2 className="text-3xl font-bold text-white">Database Admin</h2>
+          <button
+            onClick={onClose}
+            className="text-purple-300 hover:text-white transition-colors text-2xl leading-none"
+          >
+            ×
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-6 text-purple-300 hover:text-white transition-colors text-2xl leading-none"
-        >
-          ×
-        </button>
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="text-white text-center">Loading tables...</div>
+          ) : (
+            <div className="space-y-6">
+              {tables.map((table) => (
+                <TableViewer key={table} tableName={table} rowLimit={10} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

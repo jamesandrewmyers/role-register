@@ -7,3 +7,6 @@ const sqlite = new Database("data/role_register.sqlite");
 
 // Wrap with Drizzle
 export const db = drizzle(sqlite, { schema });
+
+// Export raw SQLite connection for direct queries
+export const rawDb = sqlite;
