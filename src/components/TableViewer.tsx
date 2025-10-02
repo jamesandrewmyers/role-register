@@ -19,25 +19,76 @@ export default function TableViewer({ tableName, rowLimit = 10 }: TableViewerPro
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedValue, setSelectedValue] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+
+  const fetchTableData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(
+        `/api/admin/table-data?table=${encodeURIComponent(tableName)}&limit=${rowLimit}`
+      );
+      const data = await res.json();
+      setColumns(data.columns || []);
+      setRows(data.rows || []);
+      setSelectedIds(new Set());
+    } catch (error) {
+      console.error("Failed to fetch table data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchTableData() {
-      try {
-        const res = await fetch(
-          `/api/admin/table-data?table=${encodeURIComponent(tableName)}&limit=${rowLimit}`
-        );
-        const data = await res.json();
-        setColumns(data.columns || []);
-        setRows(data.rows || []);
-      } catch (error) {
-        console.error("Failed to fetch table data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchTableData();
   }, [tableName, rowLimit]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(rows.map(row => row.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectRow = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleDelete = async () => {
+    if (selectedIds.size === 0) return;
+    
+    if (!confirm(`Delete ${selectedIds.size} row(s)?`)) return;
+
+    try {
+      setDeleting(true);
+      const res = await fetch('/api/admin/delete-rows', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableName,
+          ids: Array.from(selectedIds),
+        }),
+      });
+
+      if (res.ok) {
+        await fetchTableData();
+      } else {
+        alert('Failed to delete rows');
+      }
+    } catch (error) {
+      console.error('Failed to delete rows:', error);
+      alert('Failed to delete rows');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const renderValue = (value: any, columnName: string) => {
     if (value === null || value === undefined) {
@@ -99,17 +150,40 @@ export default function TableViewer({ tableName, rowLimit = 10 }: TableViewerPro
   return (
     <>
       <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden">
-        <div className="bg-white/10 p-4 border-b border-white/10">
-          <h3 className="text-xl font-bold text-white">{tableName}</h3>
-          <div className="text-purple-300 text-sm mt-1">
-            {rows.length} row{rows.length !== 1 ? "s" : ""} (limit: {rowLimit})
+        <div className="bg-white/10 p-4 border-b border-white/10 flex justify-between items-center">
+          <div>
+            <h3 className="text-xl font-bold text-white">{tableName}</h3>
+            <div className="text-purple-300 text-sm mt-1">
+              {rows.length} row{rows.length !== 1 ? "s" : ""} (limit: {rowLimit})
+              {selectedIds.size > 0 && ` • ${selectedIds.size} selected`}
+            </div>
           </div>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg border border-red-500/30 transition-colors disabled:opacity-50"
+              title="Delete selected rows"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          )}
         </div>
         {rows.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-white/10 sticky top-0">
                 <tr>
+                  <th className="px-4 py-3 w-12">
+                    <input
+                      type="checkbox"
+                      checked={rows.length > 0 && selectedIds.size === rows.length}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="w-4 h-4 rounded border-purple-400/30 bg-white/10 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                    />
+                  </th>
                   {columns.map((col) => (
                     <th
                       key={col.name}
@@ -130,6 +204,14 @@ export default function TableViewer({ tableName, rowLimit = 10 }: TableViewerPro
                     key={idx}
                     className="border-t border-white/5 hover:bg-white/5 transition-colors"
                   >
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(row.id)}
+                        onChange={(e) => handleSelectRow(row.id, e.target.checked)}
+                        className="w-4 h-4 rounded border-purple-400/30 bg-white/10 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                      />
+                    </td>
                     {columns.map((col) => (
                       <td key={col.name} className="px-4 py-3 text-white">
                         {renderValue(row[col.name], col.name)}
