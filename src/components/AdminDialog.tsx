@@ -56,7 +56,7 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
           ) : (
             <div className="space-y-6">
               {tables.map((table) => (
-                <TableViewer key={table} tableName={table} rowLimit={10} />
+                <TableViewer key={table} tableName={table} rowLimit={5} />
               ))}
             </div>
           )}

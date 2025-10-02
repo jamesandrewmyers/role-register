@@ -7,7 +7,8 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const tableName = searchParams.get("table");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const limit = parseInt(searchParams.get("limit") || "5");
+    const offset = parseInt(searchParams.get("offset") || "0");
 
     if (!tableName) {
       return NextResponse.json(
@@ -34,8 +35,8 @@ export async function GET(request: Request) {
       primaryKey: col.primary || false,
     }));
 
-    // Query data using Drizzle
-    const rows = await db.select().from(table).limit(limit);
+    // Query data using Drizzle with offset
+    const rows = await db.select().from(table).limit(limit).offset(offset);
 
     return NextResponse.json({ columns, rows });
   } catch (error) {

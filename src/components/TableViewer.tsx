@@ -14,34 +14,132 @@ interface TableViewerProps {
   rowLimit?: number;
 }
 
-export default function TableViewer({ tableName, rowLimit = 10 }: TableViewerProps) {
+export default function TableViewer({ tableName, rowLimit = 5 }: TableViewerProps) {
   const [columns, setColumns] = useState<Column[]>([]);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedValue, setSelectedValue] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [prefetchedRows, setPrefetchedRows] = useState<any[]>([]);
+  const tableBodyRef = useState<HTMLTableSectionElement | null>(null)[0];
 
-  const fetchTableData = async () => {
+  const fetchTableData = async (reset = false) => {
     try {
-      setLoading(true);
+      if (reset) {
+        setLoading(true);
+        setOffset(0);
+        setRows([]);
+        setPrefetchedRows([]);
+        setSelectedIds(new Set());
+      }
+
+      const currentOffset = reset ? 0 : offset;
+      
+      // Fetch current batch
       const res = await fetch(
-        `/api/admin/table-data?table=${encodeURIComponent(tableName)}&limit=${rowLimit}`
+        `/api/admin/table-data?table=${encodeURIComponent(tableName)}&limit=${rowLimit}&offset=${currentOffset}`
       );
       const data = await res.json();
-      setColumns(data.columns || []);
-      setRows(data.rows || []);
-      setSelectedIds(new Set());
+      
+      if (reset) {
+        setColumns(data.columns || []);
+      }
+      
+      const newRows = data.rows || [];
+      setHasMore(newRows.length === rowLimit);
+      
+      if (reset) {
+        setRows(newRows);
+      } else {
+        setRows(prev => [...prev, ...newRows]);
+      }
+
+      // Pre-fetch next batch
+      if (newRows.length === rowLimit) {
+        const prefetchRes = await fetch(
+          `/api/admin/table-data?table=${encodeURIComponent(tableName)}&limit=${rowLimit}&offset=${currentOffset + rowLimit}`
+        );
+        const prefetchData = await prefetchRes.json();
+        setPrefetchedRows(prefetchData.rows || []);
+      } else {
+        setPrefetchedRows([]);
+      }
     } catch (error) {
       console.error("Failed to fetch table data:", error);
     } finally {
       setLoading(false);
+      setIsFetching(false);
+    }
+  };
+
+  const loadMore = async () => {
+    if (isFetching || !hasMore) return;
+    
+    setIsFetching(true);
+    
+    // Use prefetched rows if available
+    if (prefetchedRows.length > 0) {
+      setRows(prev => [...prev, ...prefetchedRows]);
+      setOffset(prev => prev + rowLimit);
+      
+      // Pre-fetch next batch
+      try {
+        const nextOffset = offset + (rowLimit * 2);
+        const res = await fetch(
+          `/api/admin/table-data?table=${encodeURIComponent(tableName)}&limit=${rowLimit}&offset=${nextOffset}`
+        );
+        const data = await res.json();
+        setPrefetchedRows(data.rows || []);
+        setHasMore(data.rows?.length === rowLimit);
+      } catch (error) {
+        console.error("Failed to pre-fetch:", error);
+      }
+      setIsFetching(false);
+    } else {
+      // Fallback to regular fetch
+      const newOffset = offset + rowLimit;
+      setOffset(newOffset);
+      
+      try {
+        const res = await fetch(
+          `/api/admin/table-data?table=${encodeURIComponent(tableName)}&limit=${rowLimit}&offset=${newOffset}`
+        );
+        const data = await res.json();
+        const newRows = data.rows || [];
+        setRows(prev => [...prev, ...newRows]);
+        setHasMore(newRows.length === rowLimit);
+      } catch (error) {
+        console.error("Failed to load more:", error);
+      }
+      setIsFetching(false);
     }
   };
 
   useEffect(() => {
-    fetchTableData();
+    fetchTableData(true);
   }, [tableName, rowLimit]);
+
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement;
+      const scrollPosition = target.scrollTop + target.clientHeight;
+      const scrollThreshold = target.scrollHeight - 100;
+
+      if (scrollPosition >= scrollThreshold && hasMore && !isFetching) {
+        loadMore();
+      }
+    };
+
+    const scrollContainer = document.querySelector('.admin-table-scroll');
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+      return () => scrollContainer.removeEventListener('scroll', handleScroll);
+    }
+  }, [hasMore, isFetching, offset, prefetchedRows]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -78,7 +176,7 @@ export default function TableViewer({ tableName, rowLimit = 10 }: TableViewerPro
       });
 
       if (res.ok) {
-        await fetchTableData();
+        await fetchTableData(true);
       } else {
         alert('Failed to delete rows');
       }
@@ -172,7 +270,7 @@ export default function TableViewer({ tableName, rowLimit = 10 }: TableViewerPro
           )}
         </div>
         {rows.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[400px] overflow-y-auto admin-table-scroll">
             <table className="w-full text-sm">
               <thead className="bg-white/10 sticky top-0">
                 <tr>
@@ -221,6 +319,9 @@ export default function TableViewer({ tableName, rowLimit = 10 }: TableViewerPro
                 ))}
               </tbody>
             </table>
+            {isFetching && (
+              <div className="text-center py-4 text-purple-300">Loading more...</div>
+            )}
           </div>
         ) : (
           <div className="p-8 text-center text-gray-400">No data in this table</div>
