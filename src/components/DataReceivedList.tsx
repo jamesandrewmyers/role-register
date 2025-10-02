@@ -29,7 +29,7 @@ export default function DataReceivedList({ items, onSelectItem }: DataReceivedLi
               className="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
             >
               <div className="flex justify-between items-start mb-2">
-                <h3 className="text-white font-semibold flex-1">{item.title}</h3>
+                <h3 className="text-white font-semibold flex-1">{item.title} - {item.id}</h3>
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium border ${
                     item.processed === "true"
