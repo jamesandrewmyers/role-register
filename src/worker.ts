@@ -79,6 +79,15 @@ parentPort.on("message", async (eventId: string) => {
         jobDescriptionElement.find('li').each((_, el) => {
           $(el).prepend('• ');
         });
+        
+        jobDescriptionElement.find('strong, b').each((_, el) => {
+          const text = $(el).text().trim();
+          if (text.length > 0 && text.length < 80 && /^[A-Z]/.test(text) && !text.includes('.')) {
+            $(el).before('\n');
+            $(el).after('\n');
+          }
+        });
+        
         jobDescriptionElement.find('p, div, h1, h2, h3, h4, h5, h6').each((_, el) => {
           $(el).append('\n');
         });

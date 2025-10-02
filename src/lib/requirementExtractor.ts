@@ -23,9 +23,13 @@ export function extractRequirements(jobDescription: string): ExtractionResult {
   
   const deduplicated = deduplicateRequirements(requirements);
   
+  const sectionInfo = sections.map(s => 
+    `"${s.header}" (${s.isRequirementSection ? 'REQ' : s.isNiceToHaveSection ? 'NICE' : 'OTHER'})`
+  ).join(', ');
+  
   return {
     requirements: deduplicated,
-    summary: `Extracted ${deduplicated.length} requirements from job description`
+    summary: `Extracted ${deduplicated.length} requirements from job description. Sections: ${sectionInfo}`
   };
 }
 
@@ -47,7 +51,7 @@ function splitIntoSections(text: string): Section[] {
   for (const line of lines) {
     const trimmed = line.trim();
     
-    const headerMatch = trimmed.match(/^([A-Z][A-Za-z\s&\/\-']+):?\s*$/);
+    const headerMatch = trimmed.match(/^([A-Z][A-Za-z\s&\/\-,'\u2019]+):?\s*$/);
     if (headerMatch && trimmed.length < 80) {
       if (currentSection) {
         sections.push(currentSection);
@@ -113,11 +117,14 @@ function isRequirementHeader(header: string): boolean {
     'what we need',
     'what you\'ll need',
     'what you\'ll bring',
+    'what you\u2019ll bring',
     'what you bring',
     'what you should have',
     'you will need',
     'you\'ll bring',
+    'you\u2019ll bring',
     'you\'ll need',
+    'you\u2019ll need',
     'skills you\'ll need',
     'skills you need',
     'basic qualifications',
@@ -152,22 +159,22 @@ function extractFromSection(section: Section): ExtractedRequirement[] {
   
   let lines = section.content.split(/\n/).filter(l => l.trim().length > 0);
   
-  const expandedLines: string[] = [];
+  const expandedLines: Array<{text: string, wasBullet: boolean}> = [];
   for (const line of lines) {
     if (line.includes('•') && line.trim().split('•').length > 2) {
       const bullets = line.split('•').map(s => s.trim()).filter(s => s.length > 0);
-      expandedLines.push(...bullets);
+      bullets.forEach(b => expandedLines.push({text: b, wasBullet: true}));
     } else if (line.match(/\s+[-*]\s+.*\s+[-*]\s+/)) {
       const bullets = line.split(/\s+[-*]\s+/).map(s => s.trim()).filter(s => s.length > 0);
-      expandedLines.push(...bullets);
+      bullets.forEach(b => expandedLines.push({text: b, wasBullet: true}));
     } else {
-      expandedLines.push(line);
+      const isBullet = /^[•\•\-\*\+\u2022]|\d+[\.)]\s/.test(line.trim());
+      expandedLines.push({text: line, wasBullet: isBullet});
     }
   }
-  lines = expandedLines;
   
-  for (const line of lines) {
-    const trimmed = line.trim();
+  for (const lineObj of expandedLines) {
+    const trimmed = lineObj.text.trim();
     
     if (trimmed.length < 10 || trimmed.length > 500) {
       continue;
@@ -177,28 +184,19 @@ function extractFromSection(section: Section): ExtractedRequirement[] {
       continue;
     }
     
-    const isBullet = /^[\•\-\*\+]|\d+[\.)]\s/.test(trimmed);
+    const isBullet = lineObj.wasBullet;
     
     let confidence: 'high' | 'medium' | 'low' = 'low';
     let matchedPattern = '';
     
     if (section.isRequirementSection || section.isNiceToHaveSection) {
+      if (!isBullet) {
+        continue;
+      }
       confidence = 'high';
       matchedPattern = section.isNiceToHaveSection ? 'nice_to_have_section' : 'requirement_section';
     } else {
-      if (isResponsibility(trimmed)) {
-        continue;
-      }
-      
-      if (hasStrongRequirementPattern(trimmed)) {
-        confidence = 'medium';
-        matchedPattern = 'strong_pattern';
-      } else if (hasRequirementPattern(trimmed)) {
-        confidence = 'low';
-        matchedPattern = 'weak_pattern';
-      } else {
-        continue;
-      }
+      continue;
     }
     
     const cleanText = cleanRequirementText(trimmed);
@@ -356,7 +354,9 @@ function hasRequirementPattern(text: string): boolean {
     /^demonstrated (experience|ability)/i,
     /^proven (track record|experience|ability)/i,
     /(certification|certified)/i,
-    /(required|preferred|desired|needed|essential|a plus|plus|nice to have)/i,
+    /\b(required|preferred|desired|essential)\b/i,
+    /\ba plus\b/i,
+    /\bnice to have\b/i,
   ];
   
   return patterns.some(pattern => pattern.test(text));
