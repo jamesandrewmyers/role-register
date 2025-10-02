@@ -3,7 +3,7 @@ function extractJob() {
     let desc = null;
     let selectorUsed = "none";
     
-    // LinkedIn selectors -- single page neeeds "job-view-layout job-details"
+    // LinkedIn selectors
     if (location.hostname.includes("linkedin.com")) {
       desc = document.querySelector(".job-details-jobs-unified-top-card__container--two-pane") ||
              document.querySelector('[class="job-view-layout jobs-details"]');

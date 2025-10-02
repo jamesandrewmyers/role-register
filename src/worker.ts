@@ -29,7 +29,7 @@ parentPort.on("message", async (eventId: string) => {
   try {
     // Mark as processing
     db.update(eventInfo)
-      .set({ status: "processing", updatedAt: new Date().toISOString() })
+      .set({ status: "processing", updatedAt: new Date().valueOf() })
       .where(eq(eventInfo.id, eventId))
       .run();
 
@@ -58,25 +58,28 @@ parentPort.on("message", async (eventId: string) => {
         parsingLog += "[LinkedIn Parser] Parsing job posting...\n";
 
         const jobTitle =
-          $("#job-title").text().trim() ||
-          $(".jobs-unified-top-card__job-title").first().text().trim() ||
+          $(".job-details-jobs-unified-top-card__job-title").text().trim() ||
           "";
 
         const companyName =
-          $("#company-name").text().trim() ||
-          $(".jobs-unified-top-card__subtitle-primary-grouping").first().text().trim() ||
-          $(".jobs-unified-top-card__company-name").first().text().trim() ||
+          $(".job-details-jobs-unified-top-card__company-name").text().trim() ||
           "";
 
         const jobLocation =
-          $("#job-location").text().trim() ||
-          $(".jobs-unified-top-card__bullet").first().text().trim() ||
-          $(".jobs-unified-top-card__workplace-type").first().text().trim() ||
+          $(".job-details-jobs-unified-top-card__tertiary-description-container span.tvm__text")
+            .map((_, el) => $(el).text().trim())
+            .get()
+            .find(txt => txt.length > 0) ||
+          "";
+
+        const jobDescription =
+          $(".jobs-box__html-content").text().trim() ||
           "";
 
         parsingLog += `[LinkedIn Parser] Job Title: ${jobTitle}\n`;
         parsingLog += `[LinkedIn Parser] Company Name: ${companyName}\n`;
         parsingLog += `[LinkedIn Parser] Job Location: ${jobLocation}\n`;
+        parsingLog += `[LinkedIn Parser] Job Description: ${jobDescription}\n`;
       } else {
         parsingLog += `[Parser] No parser configured for hostname: ${url.hostname}\n`;
       }
@@ -96,7 +99,7 @@ parentPort.on("message", async (eventId: string) => {
 
     // Mark as done
     db.update(eventInfo)
-      .set({ status: "done", updatedAt: new Date().toISOString() })
+      .set({ status: "done", updatedAt: new Date().valueOf() })
       .where(eq(eventInfo.id, eventId))
       .run();
 
@@ -110,7 +113,7 @@ parentPort.on("message", async (eventId: string) => {
         .set({
           status: "pending",
           retries,
-          updatedAt: new Date().toISOString(),
+          updatedAt: new Date().valueOf(),
           error: String(err),
         })
         .where(eq(eventInfo.id, eventId))
@@ -128,7 +131,7 @@ parentPort.on("message", async (eventId: string) => {
         .set({
           status: "error",
           retries,
-          updatedAt: new Date().toISOString(),
+          updatedAt: new Date().valueOf(),
           error: String(err),
         })
         .where(eq(eventInfo.id, eventId))
