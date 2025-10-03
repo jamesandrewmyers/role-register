@@ -54,4 +54,5 @@ function extractJob() {
       // Send job data back to background script for API call
       sendResponse({ success: true, jobData: jobData });
     }
+    return true;
   });  
