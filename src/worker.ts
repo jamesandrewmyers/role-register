@@ -1,7 +1,8 @@
 import { parentPort } from "worker_threads";
+import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
-import { eventInfo, dataReceived } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { eventInfo, dataReceived, roleCompany, roleListing, roleLocation, roleState, roleQualifications } from "@/lib/schema";
+import { and, eq } from "drizzle-orm";
 import * as cheerio from "cheerio";
 import { extractRequirements } from "@/lib/requirementExtractor";
 
@@ -66,7 +67,7 @@ parentPort.on("message", async (eventId: string) => {
           $(".job-details-jobs-unified-top-card__company-name").text().trim() ||
           "";
 
-        const jobLocation =
+        const jobLocationRaw =
           $(".job-details-jobs-unified-top-card__tertiary-description-container span.tvm__text")
             .map((_, el) => $(el).text().trim())
             .get()
@@ -96,7 +97,7 @@ parentPort.on("message", async (eventId: string) => {
 
         parsingLog += `[LinkedIn Parser] Job Title: ${jobTitle}\n`;
         parsingLog += `[LinkedIn Parser] Company Name: ${companyName}\n`;
-        parsingLog += `[LinkedIn Parser] Job Location: ${jobLocation}\n`;
+        parsingLog += `[LinkedIn Parser] Job Location: ${jobLocationRaw}\n`;
         //parsingLog += `[LinkedIn Parser] Job Description: ${jobDescription}\n`;
 
         if (jobDescription) {
@@ -142,6 +143,108 @@ parentPort.on("message", async (eventId: string) => {
               niceToHave.forEach(r => {
                 parsingLog += `  • ${r.text} [${r.category}, ${r.confidence} confidence]\n`;
               });
+            }
+          }
+          
+          if (jobTitle && companyName && jobDescription) {
+            let companyId = db
+              .select({ id: roleCompany.id })
+              .from(roleCompany)
+              .where(eq(roleCompany.name, companyName))
+              .get()?.id;
+            
+            if (!companyId) {
+              companyId = randomUUID();
+              db.insert(roleCompany)
+                .values({
+                  id: companyId,
+                  name: companyName,
+                })
+                .run();
+              parsingLog += `[Database] Created company: ${companyName}\n`;
+            }
+            
+            let locationId: string | undefined;
+            if (jobLocationRaw) {
+              const locationParts = jobLocationRaw.split(',').map(p => p.trim());
+              const city = locationParts[0] || '';
+              const stateStr = locationParts[1] || '';
+              
+              if (city && stateStr) {
+                const state = db
+                  .select()
+                  .from(roleState)
+                  .where(eq(roleState.abbreviation, stateStr))
+                  .get();
+                
+                if (state) {
+                  const existingLocation = db
+                    .select({ id: roleLocation.id })
+                    .from(roleLocation)
+                    .where(and(
+                      eq(roleLocation.city, city),
+                      eq(roleLocation.locationState, state.id)
+                    ))
+                    .get();
+                  
+                  if (existingLocation) {
+                    locationId = existingLocation.id;
+                  } else {
+                    locationId = randomUUID();
+                    db.insert(roleLocation)
+                      .values({
+                        id: locationId,
+                        city,
+                        locationState: state.id,
+                      })
+                      .run();
+                    parsingLog += `[Database] Created location: ${city}, ${stateStr}\n`;
+                  }
+                } else {
+                  parsingLog += `[Database] State not found: ${stateStr}\n`;
+                }
+              }
+            }
+            
+            const listingId = randomUUID();
+            db.insert(roleListing)
+              .values({
+                id: listingId,
+                companyId,
+                title: jobTitle,
+                description: jobDescription,
+                location: locationId,
+              })
+              .run();
+            parsingLog += `[Database] Created role listing: ${jobTitle}\n`;
+            
+            if (extracted.requirements.length > 0) {
+              const requirements = extracted.requirements.filter(r => r.type === 'required');
+              const niceToHaves = extracted.requirements.filter(r => r.type === 'nice-to-have');
+              
+              for (const req of requirements) {
+                db.insert(roleQualifications)
+                  .values({
+                    id: randomUUID(),
+                    listingId,
+                    description: req.text,
+                    type: 'requirement',
+                  })
+                  .run();
+              }
+              
+              for (const nth of niceToHaves) {
+                db.insert(roleQualifications)
+                  .values({
+                    id: randomUUID(),
+                    listingId,
+                    description: nth.text,
+                    type: 'nice to have',
+                  })
+                  .run();
+              }
+              
+              parsingLog += `[Database] Created ${requirements.length} requirements and ${niceToHaves.length} nice-to-haves\n`;
             }
           }
         }

@@ -45,6 +45,8 @@ export const roleListing = sqliteTable("role_listing", {
     .references(() => roleCompany.id, { onDelete: "cascade" }), // if company removed → listings removed
   title: text("title").notNull(),
   description: text("description").notNull(),
+  // Optional FK to role_location
+  location: text("location").references(() => roleLocation.id, { onDelete: "set null" }),
   capturedAt: integer("captured_at").notNull().default(sql`(strftime('%s','now'))`),
 });
 
@@ -112,4 +114,39 @@ export const roleEvent = sqliteTable("role_event", {
   title: text("title").notNull(), // e.g. "Phone Screen"
   eventDate: integer("event_date"), // Unix timestamp
   notes: text("notes"),
+});
+
+// -----------------------------
+// role_qualifications
+// -----------------------------
+export const roleQualifications = sqliteTable("role_qualifications", {
+  id: text("id").primaryKey(), // UUID
+  listingId: text("listing_id")
+    .notNull()
+    .references(() => roleListing.id, { onDelete: "cascade" }),
+  description: text("description").notNull(),
+  type: text("type").notNull(), // "requirement" | "nice to have"
+  createdAt: integer("created_at").notNull().default(sql`(strftime('%s','now'))`),
+});
+
+// -----------------------------
+// role_state
+// -----------------------------
+export const roleState = sqliteTable("role_state", {
+  id: text("id").primaryKey(), // UUID
+  name: text("name").notNull(),
+  abbreviation: text("abbreviation").notNull(),
+  createdAt: integer("created_at").notNull().default(sql`(strftime('%s','now'))`),
+});
+
+// -----------------------------
+// role_location
+// -----------------------------
+export const roleLocation = sqliteTable("role_location", {
+  id: text("id").primaryKey(), // UUID
+  locationState: text("location_state")
+    .notNull()
+    .references(() => roleState.id, { onDelete: "cascade" }),
+  city: text("city").notNull(),
+  createdAt: integer("created_at").notNull().default(sql`(strftime('%s','now'))`),
 });
