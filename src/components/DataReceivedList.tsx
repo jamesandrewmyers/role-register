@@ -44,6 +44,8 @@ export default function DataReceivedList({ items, onSelectItem }: DataReceivedLi
               </div>
               <a 
                 href={item.url} 
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-purple-300 text-sm hover:underline block truncate mb-1"
                 onClick={(e) => e.stopPropagation()}
               >

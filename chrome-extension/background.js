@@ -5,7 +5,7 @@ chrome.action.onClicked.addListener((tab) => {
     // Send message to content script to extract job data
     chrome.tabs.sendMessage(tab.id, { action: "extractAndSend" }, (response) => {
       if (chrome.runtime.lastError) {
-        console.error("Error:", chrome.runtime.lastError.message);
+        console.error("Error:", chrome.runtime.lastError);
         showNotification("Job Capture Error", "Failed to capture job data. Make sure you're on a job posting page.");
       } else if (response && response.success && response.jobData) {
         // Now send the job data to the API from background script

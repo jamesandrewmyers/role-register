@@ -5,8 +5,8 @@ function extractJob() {
     
     // LinkedIn selectors
     if (location.hostname.includes("linkedin.com")) {
-      desc = document.querySelector(".job-details-jobs-unified-top-card__container--two-pane") ||
-             document.querySelector('[class="job-view-layout jobs-details"]');
+      desc = document.querySelector('[class="job-view-layout jobs-details"]') ||
+             document.querySelector('[class="jobs-details"]');
       selectorUsed = "linkedin";
     }
     
@@ -20,7 +20,8 @@ function extractJob() {
     
     // Fallback
     if (!desc) {
-      desc = document.querySelector(".description") || document.body;
+      console.warn("No known job description selector matched, using fallback.");
+      //desc = document.querySelector(".description") || document.body;
       selectorUsed = "fallback";
     }
     
