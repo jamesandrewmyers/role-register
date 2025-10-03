@@ -1,8 +1,26 @@
 import Emittery from "emittery";
+import { Worker } from "worker_threads";
+import path from "path";
 
 export const bus = new Emittery<{
   "event.created": { id: string };
 }>();
+
+// Set up worker listener in the same context as the bus
+bus.on("event.created", ({ id }) => {
+  console.log("[Event Bus] Starting worker for event:", id);
+  const worker = new Worker(path.resolve(process.cwd(), "src/worker.js"));
+  worker.postMessage(id);
+
+  worker.on("message", (msg) => {
+    console.log("[Event Bus] Worker finished:", msg);
+    worker.terminate();
+  });
+
+  worker.on("error", (err) => {
+    console.error("[Event Bus] Worker error:", err);
+  });
+});
 
 import { db } from "@/lib/db";
 import { eventInfo } from "@/lib/schema";
@@ -25,6 +43,7 @@ export async function enqueueEvent(
   }).run();
 
   // Notify queue runner to spawn worker
+  console.log("[Event] Emitting event.created for:", id);
   bus.emit("event.created", { id });
 
   return { id };

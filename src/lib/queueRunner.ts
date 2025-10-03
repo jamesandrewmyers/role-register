@@ -1,30 +1,12 @@
-import { Worker } from "worker_threads";
 import { bus } from "@/lib/event";
 import { db } from "@/lib/db";
 import { eventInfo } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import path from "path";
 
 export function startQueueRunner() {
+  console.log("[QueueRunner] Resuming pending jobs from last session");
 
-  bus.on("event.created", ({ id }) => {
-    console.log("Starting worker for event:", id);
-    
-    // Always use the JavaScript worker for compatibility
-    const worker = new Worker(path.resolve(process.cwd(), "src/worker.js"));
-    worker.postMessage(id);
-
-    worker.on("message", (msg) => {
-      console.log("Worker finished:", msg);
-      worker.terminate();
-    });
-
-    worker.on("error", (err) => {
-      console.error("Worker error:", err);
-    });
-  });
-
-   // 1. Reset interrupted jobs
+  // 1. Reset interrupted jobs
   db.update(eventInfo)
     .set({ status: "pending" })
     .where(eq(eventInfo.status, "processing"))
