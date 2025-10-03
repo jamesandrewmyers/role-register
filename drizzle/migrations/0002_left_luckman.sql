@@ -1,1 +1,0 @@
-ALTER TABLE `event_info` ADD `retries` integer DEFAULT 0;

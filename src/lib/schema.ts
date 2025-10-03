@@ -47,6 +47,7 @@ export const roleListing = sqliteTable("role_listing", {
   description: text("description").notNull(),
   // Optional FK to role_location
   location: text("location").references(() => roleLocation.id, { onDelete: "set null" }),
+  workArrangement: text("work_arrangement").notNull().default("on-site"), // "remote", "hybrid", "on-site"
   capturedAt: integer("captured_at").notNull().default(sql`(strftime('%s','now'))`),
 });
 
