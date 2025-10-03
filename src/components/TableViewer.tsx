@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 interface Column {
   name: string;
@@ -24,8 +24,9 @@ export default function TableViewer({ tableName, rowLimit = 5 }: TableViewerProp
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
-  const [prefetchedRows, setPrefetchedRows] = useState<any[]>([]);
-  const tableBodyRef = useState<HTMLTableSectionElement | null>(null)[0];
+  const [scrollContainerRef, setScrollContainerRef] = useState<HTMLDivElement | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const loadingRef = useRef(false);
 
   const fetchTableData = async (reset = false) => {
     try {
@@ -33,7 +34,6 @@ export default function TableViewer({ tableName, rowLimit = 5 }: TableViewerProp
         setLoading(true);
         setOffset(0);
         setRows([]);
-        setPrefetchedRows([]);
         setSelectedIds(new Set());
       }
 
@@ -47,26 +47,18 @@ export default function TableViewer({ tableName, rowLimit = 5 }: TableViewerProp
       
       if (reset) {
         setColumns(data.columns || []);
+        setTotalCount(data.totalCount || 0);
       }
       
       const newRows = data.rows || [];
-      setHasMore(newRows.length === rowLimit);
+      const currentTotal = reset ? newRows.length : (rows.length + newRows.length);
+      setHasMore(currentTotal < (data.totalCount || 0));
       
       if (reset) {
         setRows(newRows);
+        setOffset(0);
       } else {
         setRows(prev => [...prev, ...newRows]);
-      }
-
-      // Pre-fetch next batch
-      if (newRows.length === rowLimit) {
-        const prefetchRes = await fetch(
-          `/api/admin/table-data?table=${encodeURIComponent(tableName)}&limit=${rowLimit}&offset=${currentOffset + rowLimit}`
-        );
-        const prefetchData = await prefetchRes.json();
-        setPrefetchedRows(prefetchData.rows || []);
-      } else {
-        setPrefetchedRows([]);
       }
     } catch (error) {
       console.error("Failed to fetch table data:", error);
@@ -76,70 +68,77 @@ export default function TableViewer({ tableName, rowLimit = 5 }: TableViewerProp
     }
   };
 
-  const loadMore = async () => {
-    if (isFetching || !hasMore) return;
+  const loadMore = useCallback(async () => {
+    if (loadingRef.current || isFetching || !hasMore) {
+      console.log(`[${tableName}] Skipping loadMore - loading: ${loadingRef.current}, isFetching: ${isFetching}, hasMore: ${hasMore}`);
+      return;
+    }
     
+    loadingRef.current = true;
     setIsFetching(true);
     
-    // Use prefetched rows if available
-    if (prefetchedRows.length > 0) {
-      setRows(prev => [...prev, ...prefetchedRows]);
-      setOffset(prev => prev + rowLimit);
-      
-      // Pre-fetch next batch
-      try {
-        const nextOffset = offset + (rowLimit * 2);
-        const res = await fetch(
-          `/api/admin/table-data?table=${encodeURIComponent(tableName)}&limit=${rowLimit}&offset=${nextOffset}`
-        );
-        const data = await res.json();
-        setPrefetchedRows(data.rows || []);
-        setHasMore(data.rows?.length === rowLimit);
-      } catch (error) {
-        console.error("Failed to pre-fetch:", error);
-      }
-      setIsFetching(false);
-    } else {
-      // Fallback to regular fetch
+    try {
       const newOffset = offset + rowLimit;
-      setOffset(newOffset);
       
-      try {
-        const res = await fetch(
-          `/api/admin/table-data?table=${encodeURIComponent(tableName)}&limit=${rowLimit}&offset=${newOffset}`
-        );
-        const data = await res.json();
-        const newRows = data.rows || [];
-        setRows(prev => [...prev, ...newRows]);
-        setHasMore(newRows.length === rowLimit);
-      } catch (error) {
-        console.error("Failed to load more:", error);
+      console.log(`[${tableName}] Loading more - offset: ${newOffset}, limit: ${rowLimit}, current rows: ${rows.length}`);
+      
+      const res = await fetch(
+        `/api/admin/table-data?table=${encodeURIComponent(tableName)}&limit=${rowLimit}&offset=${newOffset}`
+      );
+      const data = await res.json();
+      const newRows = data.rows || [];
+      
+      console.log(`[${tableName}] Received ${newRows.length} rows, totalCount: ${data.totalCount}`);
+      
+      if (newRows.length > 0) {
+        const newRowsList = [...rows, ...newRows];
+        console.log(`[${tableName}] Now have ${newRowsList.length} rows total, hasMore: ${newRowsList.length < (data.totalCount || 0)}`);
+        
+        setRows(newRowsList);
+        setOffset(newOffset);
+        setHasMore(newRowsList.length < (data.totalCount || 0));
+      } else {
+        console.log(`[${tableName}] No more rows, setting hasMore to false`);
+        setHasMore(false);
       }
+    } catch (error) {
+      console.error("Failed to load more:", error);
+    } finally {
+      loadingRef.current = false;
       setIsFetching(false);
     }
-  };
+  }, [isFetching, hasMore, offset, rowLimit, tableName, rows]);
 
   useEffect(() => {
     fetchTableData(true);
   }, [tableName, rowLimit]);
 
-  useEffect(() => {
-    const handleScroll = (e: Event) => {
-      const target = e.target as HTMLElement;
-      const scrollPosition = target.scrollTop + target.clientHeight;
-      const scrollThreshold = target.scrollHeight - 100;
+  const handleScroll = useCallback(() => {
+    if (!scrollContainerRef || isFetching || !hasMore) return;
+    
+    const scrollPosition = scrollContainerRef.scrollTop + scrollContainerRef.clientHeight;
+    const scrollThreshold = scrollContainerRef.scrollHeight - 100;
 
-      if (scrollPosition >= scrollThreshold && hasMore && !isFetching) {
-        loadMore();
-      }
-    };
-
-    const scrollContainer = document.querySelector('.admin-table-scroll');
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll);
-      return () => scrollContainer.removeEventListener('scroll', handleScroll);
+    if (scrollPosition >= scrollThreshold) {
+      loadMore();
     }
-  }, [hasMore, isFetching, offset, prefetchedRows]);
+  }, [scrollContainerRef, isFetching, hasMore, loadMore]);
+
+  useEffect(() => {
+    if (!scrollContainerRef) return;
+
+    scrollContainerRef.addEventListener('scroll', handleScroll);
+    return () => scrollContainerRef.removeEventListener('scroll', handleScroll);
+  }, [scrollContainerRef, handleScroll]);
+  
+  // Auto-load more rows if container isn't scrollable yet
+  useEffect(() => {
+    if (!scrollContainerRef || isFetching || !hasMore || loading) return;
+    
+    if (scrollContainerRef.scrollHeight <= scrollContainerRef.clientHeight) {
+      loadMore();
+    }
+  }, [scrollContainerRef, rows, hasMore, isFetching, loading, loadMore]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -252,7 +251,7 @@ export default function TableViewer({ tableName, rowLimit = 5 }: TableViewerProp
           <div>
             <h3 className="text-xl font-bold text-white">{tableName}</h3>
             <div className="text-purple-300 text-sm mt-1">
-              {rows.length} row{rows.length !== 1 ? "s" : ""} (limit: {rowLimit})
+              {rows.length} of {totalCount} row{totalCount !== 1 ? "s" : ""}
               {selectedIds.size > 0 && ` • ${selectedIds.size} selected`}
             </div>
           </div>
@@ -270,7 +269,7 @@ export default function TableViewer({ tableName, rowLimit = 5 }: TableViewerProp
           )}
         </div>
         {rows.length > 0 ? (
-          <div className="overflow-x-auto max-h-[400px] overflow-y-auto admin-table-scroll">
+          <div ref={setScrollContainerRef} className="overflow-x-auto max-h-[400px] overflow-y-auto admin-table-scroll">
             <table className="w-full text-sm">
               <thead className="bg-white/10 sticky top-0">
                 <tr>

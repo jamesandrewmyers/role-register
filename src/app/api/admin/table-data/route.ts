@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import * as schema from "@/lib/schema";
-import { getTableColumns } from "drizzle-orm";
+import { getTableColumns, sql } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
@@ -35,10 +35,14 @@ export async function GET(request: Request) {
       primaryKey: col.primary || false,
     }));
 
+    // Get total count
+    const countResult = await db.select({ count: sql<number>`count(*)` }).from(table);
+    const totalCount = countResult[0]?.count || 0;
+
     // Query data using Drizzle with offset
     const rows = await db.select().from(table).limit(limit).offset(offset);
 
-    return NextResponse.json({ columns, rows });
+    return NextResponse.json({ columns, rows, totalCount });
   } catch (error) {
     console.error("Failed to fetch table data:", error);
     return NextResponse.json(
