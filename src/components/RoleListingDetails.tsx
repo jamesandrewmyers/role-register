@@ -6,6 +6,17 @@ interface RoleListing {
   description: string;
   capturedAt: string;
   companyId?: string;
+  company?: {
+    id: string;
+    name: string;
+    website?: string;
+  } | null;
+  location?: {
+    id: string;
+    city: string;
+    stateName: string;
+    stateAbbreviation: string;
+  } | null;
 }
 
 interface RoleListingDetailsProps {
@@ -16,7 +27,24 @@ interface RoleListingDetailsProps {
 export default function RoleListingDetails({ listing, onClose }: RoleListingDetailsProps) {
   if (!listing) return null;
 
-  const entries = Object.entries(listing).filter(([key, value]) => value !== undefined && value !== null);
+  // Create a display object with human-readable values
+  const displayData: Record<string, any> = {
+    id: listing.id,
+    title: listing.title,
+    description: listing.description,
+  };
+
+  if (listing.company) {
+    displayData.company = listing.company.name;
+  }
+
+  if (listing.location) {
+    displayData.location = `${listing.location.city}, ${listing.location.stateAbbreviation}`;
+  }
+
+  displayData.capturedAt = listing.capturedAt;
+
+  const entries = Object.entries(displayData).filter(([key, value]) => value !== undefined && value !== null);
 
   return (
     <div

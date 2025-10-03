@@ -37,6 +37,17 @@ interface RoleListing {
   description: string;
   capturedAt: string;
   companyId?: string;
+  company?: {
+    id: string;
+    name: string;
+    website?: string;
+  } | null;
+  location?: {
+    id: string;
+    city: string;
+    stateName: string;
+    stateAbbreviation: string;
+  } | null;
 }
 
 interface DashboardData {
