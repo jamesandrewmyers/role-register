@@ -215,18 +215,47 @@ parentPort.on("message", async (eventId: string) => {
               }
             }
             
-            const listingId = randomUUID();
-            db.insert(roleListing)
-              .values({
-                id: listingId,
-                companyId,
-                title: jobTitle,
-                description: jobDescription,
-                location: locationId,
-                dataReceivedId: payload.dataReceivedId,
-              })
-              .run();
-            parsingLog += `[Database] Created role listing: ${jobTitle}\n`;
+            const existingListing = db
+              .select({ id: roleListing.id })
+              .from(roleListing)
+              .where(eq(roleListing.dataReceivedId, payload.dataReceivedId))
+              .get();
+            
+            let listingId: string;
+            
+            if (existingListing) {
+              listingId = existingListing.id;
+              
+              db.update(roleListing)
+                .set({
+                  companyId,
+                  title: jobTitle,
+                  description: jobDescription,
+                  location: locationId,
+                  capturedAt: new Date().valueOf() / 1000,
+                })
+                .where(eq(roleListing.id, listingId))
+                .run();
+              
+              db.delete(roleQualifications)
+                .where(eq(roleQualifications.listingId, listingId))
+                .run();
+              
+              parsingLog += `[Database] Updated existing role listing: ${jobTitle}\n`;
+            } else {
+              listingId = randomUUID();
+              db.insert(roleListing)
+                .values({
+                  id: listingId,
+                  companyId,
+                  title: jobTitle,
+                  description: jobDescription,
+                  location: locationId,
+                  dataReceivedId: payload.dataReceivedId,
+                })
+                .run();
+              parsingLog += `[Database] Created role listing: ${jobTitle}\n`;
+            }
             
             if (extracted.requirements.length > 0) {
               const requirements = extracted.requirements.filter(r => r.type === 'required');
