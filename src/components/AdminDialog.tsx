@@ -35,6 +35,12 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
   }, [isOpen]);
 
   const handleReprocessAll = async () => {
+    const confirmed = confirm("Are you sure you want to reprocess all imported listing data? This will create reprocessing events for all data_received records.");
+    
+    if (!confirmed) {
+      return;
+    }
+
     setReprocessing(true);
     try {
       const response = await fetch("/api/dashboard");
@@ -69,11 +75,11 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-gradient-to-br from-slate-800 to-purple-900 rounded-2xl border border-purple-400/30 shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-gradient-to-br from-slate-800 to-purple-900 rounded-2xl border border-purple-400/30 shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col mt-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-gradient-to-br from-slate-800 to-purple-900 border-b border-purple-400/30 p-6 flex justify-between items-center">
