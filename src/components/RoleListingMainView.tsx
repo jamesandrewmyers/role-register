@@ -43,7 +43,10 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
 
           <div className="bg-white/5 rounded-lg p-6 border border-white/10">
             <h2 className="text-xl font-semibold text-purple-300 mb-4">Description</h2>
-            <div className="text-white whitespace-pre-wrap">{listing.description}</div>
+            <div 
+              className="text-white"
+              dangerouslySetInnerHTML={{ __html: listing.description }}
+            />
           </div>
 
           <div className="bg-white/5 rounded-lg p-4 border border-white/10">

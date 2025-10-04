@@ -76,24 +76,33 @@ parentPort.on("message", async (eventId: string) => {
 
         const jobDescriptionElement = $(".jobs-box__html-content");
         
-        jobDescriptionElement.find('br').replaceWith('\n');
+        jobDescriptionElement.find('*').removeAttr('class').removeAttr('style').removeAttr('id');
+        
+        jobDescriptionElement.find('ul').each((_, el) => {
+          $(el).css({ 'list-style-type': 'disc', 'margin-left': '1.5rem', 'margin-bottom': '1rem' });
+        });
+        
+        jobDescriptionElement.find('ol').each((_, el) => {
+          $(el).css({ 'list-style-type': 'decimal', 'margin-left': '1.5rem', 'margin-bottom': '1rem' });
+        });
+        
         jobDescriptionElement.find('li').each((_, el) => {
-          $(el).prepend('• ');
+          $(el).css({ 'margin-bottom': '0.5rem' });
+        });
+        
+        jobDescriptionElement.find('p').each((_, el) => {
+          $(el).css({ 'margin-bottom': '1rem' });
+        });
+        
+        jobDescriptionElement.find('h1, h2, h3, h4, h5, h6').each((_, el) => {
+          $(el).css({ 'font-weight': 'bold', 'margin-top': '1.5rem', 'margin-bottom': '0.75rem' });
         });
         
         jobDescriptionElement.find('strong, b').each((_, el) => {
-          const text = $(el).text().trim();
-          if (text.length > 0 && text.length < 80 && /^[A-Z]/.test(text) && !text.includes('.')) {
-            $(el).before('\n');
-            $(el).after('\n');
-          }
+          $(el).css({ 'font-weight': 'bold' });
         });
         
-        jobDescriptionElement.find('p, div, h1, h2, h3, h4, h5, h6').each((_, el) => {
-          $(el).append('\n');
-        });
-        
-        const jobDescription = jobDescriptionElement.text().trim() || "";
+        const jobDescription = jobDescriptionElement.html()?.trim() || "";
 
         parsingLog += `[LinkedIn Parser] Job Title: ${jobTitle}\n`;
         parsingLog += `[LinkedIn Parser] Company Name: ${companyName}\n`;
