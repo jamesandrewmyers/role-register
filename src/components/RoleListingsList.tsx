@@ -28,7 +28,7 @@ export default function RoleListingsList({ listings, onSelectListing }: RoleList
               <h3 className="text-white font-semibold mb-2">{listing.title}</h3>
               <p className="text-gray-300 text-sm mb-2 line-clamp-2">{listing.description}</p>
               <div className="text-gray-400 text-xs">
-                Captured: {new Date(listing.capturedAt).toLocaleString()}
+                Captured: {new Date(listing.capturedAt * 1000).toLocaleString()}
               </div>
             </div>
           ))}

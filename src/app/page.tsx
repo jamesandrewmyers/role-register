@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminDialog from "@/components/AdminDialog";
-import RoleListingDetails from "@/components/RoleListingDetails";
+import RoleListingMainView from "@/components/RoleListingMainView";
 import DataReceivedDetails from "@/components/DataReceivedDetails";
 import EventInfoDetails from "@/components/EventInfoDetails";
 import RoleListingsList from "@/components/RoleListingsList";
@@ -123,6 +123,24 @@ export default function Page() {
     }
   };
 
+  if (selectedListing) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <RoleListingMainView 
+          listing={selectedListing}
+          sidebarChildren={
+            <button
+              onClick={() => setSelectedListing(null)}
+              className="p-4 bg-purple-500/30 hover:bg-purple-500/50 text-white transition-colors"
+            >
+              ← Back to Listings
+            </button>
+          }
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -197,7 +215,6 @@ export default function Page() {
         </section>
       </div>
 
-      <RoleListingDetails listing={selectedListing} onClose={() => setSelectedListing(null)} />
       <DataReceivedDetails item={selectedDataReceived} onClose={() => setSelectedDataReceived(null)} />
       <EventInfoDetails event={selectedEvent} onClose={() => setSelectedEvent(null)} />
       <AdminDialog isOpen={showAdmin} onClose={() => setShowAdmin(false)} />
