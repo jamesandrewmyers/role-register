@@ -52,7 +52,7 @@ export default function DataReceivedList({ items, onSelectItem }: DataReceivedLi
                 {item.url}
               </a>
               <div className="text-gray-400 text-xs">
-                {new Date(item.receivedAt * 1000).toLocaleString()}
+                {new Date(Number(item.receivedAt) * 1000).toLocaleString()}
               </div>
               {item.processingNotes && (
                 <div className="mt-2 text-yellow-300 text-sm">{item.processingNotes}</div>

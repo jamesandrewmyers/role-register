@@ -39,7 +39,7 @@ export default function EventInfoList({ events, onSelectEvent }: EventInfoListPr
                 <div className="flex-1">
                   <h3 className="text-white font-semibold">{event.type} - {event.id}</h3>
                   <div className="text-gray-400 text-xs mt-1">
-                    {new Date(event.createdAt * 1000).toLocaleString()}
+                    {new Date(Number(event.createdAt) * 1000).toLocaleString()}
                   </div>
                 </div>
                 <span
