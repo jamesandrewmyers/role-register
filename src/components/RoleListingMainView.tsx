@@ -59,46 +59,33 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
 
       <div className="w-1/4 h-full flex flex-col">
         {sidebarChildren}
-        <div className="overflow-y-auto flex-1 p-4 space-y-3">
-          {(() => {
-            const displayData: Record<string, any> = {
-              id: listing.id,
-              title: listing.title,
-              description: listing.description,
-            };
-
-            if (listing.company) {
-              displayData.company = listing.company.name;
-            }
-
-            if (listing.location) {
-              displayData.location = `${listing.location.city}, ${listing.location.stateAbbreviation}`;
-            }
-
-            displayData.capturedAt = new Date(Number(listing.capturedAt) * 1000).toLocaleString();
-
-            const entries = Object.entries(displayData).filter(([key, value]) => value !== undefined && value !== null);
-
-            return entries.map(([key, value]) => (
-              <div
-                key={key}
-                className="bg-white/5 rounded-lg p-4 border border-white/10"
-              >
-                <div className="text-purple-300 text-sm font-semibold mb-1 uppercase tracking-wide">
-                  {key.replace(/([A-Z])/g, ' $1').trim()}
-                </div>
-                <div className="text-white break-words">
-                  {typeof value === 'string' && value.length > 200 ? (
-                    <div className="text-sm font-mono bg-black/20 p-3 rounded overflow-x-auto max-h-40 overflow-y-auto">
-                      {value}
-                    </div>
-                  ) : (
-                    String(value)
-                  )}
-                </div>
+        <div className="overflow-y-auto flex-1 p-4">
+          <div className="bg-white/5 rounded-lg p-4 border border-white/10 space-y-3">
+            <div>
+              <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">ID</div>
+              <div className="text-white text-sm">{listing.id}</div>
+            </div>
+            <div>
+              <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Title</div>
+              <div className="text-white text-sm">{listing.title}</div>
+            </div>
+            {listing.company && (
+              <div>
+                <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Company</div>
+                <div className="text-white text-sm">{listing.company.name}</div>
               </div>
-            ));
-          })()}
+            )}
+            {listing.location && (
+              <div>
+                <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Location</div>
+                <div className="text-white text-sm">{listing.location.city}, {listing.location.stateAbbreviation}</div>
+              </div>
+            )}
+            <div>
+              <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Captured At</div>
+              <div className="text-white text-sm">{new Date(Number(listing.capturedAt) * 1000).toLocaleString()}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
