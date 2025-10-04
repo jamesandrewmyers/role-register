@@ -52,7 +52,12 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
     }
   };
 
-  const entries = Object.entries(item).filter(([key, value]) => value !== undefined && value !== null);
+  const displayData = {
+    ...item,
+    receivedAt: new Date(item.receivedAt * 1000).toLocaleString(),
+  };
+  
+  const entries = Object.entries(displayData).filter(([key, value]) => value !== undefined && value !== null);
 
   return (
     <div

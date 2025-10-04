@@ -42,7 +42,7 @@ export default function RoleListingDetails({ listing, onClose }: RoleListingDeta
     displayData.location = `${listing.location.city}, ${listing.location.stateAbbreviation}`;
   }
 
-  displayData.capturedAt = listing.capturedAt;
+  displayData.capturedAt = new Date(listing.capturedAt * 1000).toLocaleString();
 
   const entries = Object.entries(displayData).filter(([key, value]) => value !== undefined && value !== null);
 

@@ -19,7 +19,13 @@ interface EventInfoDetailsProps {
 export default function EventInfoDetails({ event, onClose }: EventInfoDetailsProps) {
   if (!event) return null;
 
-  const entries = Object.entries(event).filter(([key, value]) => value !== undefined && value !== null);
+  const displayData = {
+    ...event,
+    createdAt: new Date(event.createdAt * 1000).toLocaleString(),
+    updatedAt: event.updatedAt ? new Date(event.updatedAt * 1000).toLocaleString() : undefined,
+  };
+
+  const entries = Object.entries(displayData).filter(([key, value]) => value !== undefined && value !== null);
 
   return (
     <div
