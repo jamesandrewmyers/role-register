@@ -49,6 +49,7 @@ export const roleListing = sqliteTable("role_listing", {
   location: text("location").references(() => roleLocation.id, { onDelete: "set null" }),
   workArrangement: text("work_arrangement").notNull().default("on-site"), // "remote", "hybrid", "on-site"
   capturedAt: integer("captured_at").notNull().default(sql`(strftime('%s','now'))`),
+  dataReceivedId: text("data_received_id").references(() => dataReceived.id, { onDelete: "set null" }),
 });
 
 // -----------------------------

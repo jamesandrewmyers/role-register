@@ -223,6 +223,7 @@ parentPort.on("message", async (eventId: string) => {
                 title: jobTitle,
                 description: jobDescription,
                 location: locationId,
+                dataReceivedId: payload.dataReceivedId,
               })
               .run();
             parsingLog += `[Database] Created role listing: ${jobTitle}\n`;
