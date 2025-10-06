@@ -72,5 +72,12 @@ Run ahy git comands you see fit.
 Never include references to claude in any commit messages or content generated unless explicitly asked to do so.
 Do not add unrequested features to code unless expressly required by other requested features.
 Prioritize the use of mcp servers when they provide features that would assist with a request.
-Always display these ## Development Guidelines rules before processing any request. 
+Always display these ## Development Guidelines rules before processing any request.
+
+## GitHub Integration Protocol
+
+- **ALWAYS** use the GitHub MCP server for all GitHub interactions (commits, pushes, pull requests, etc.)
+- **NEVER** use raw git bash commands when GitHub MCP tools are available
+- When pushing changes to GitHub using the GitHub MCP server, **ALWAYS** show the proposed commit message to the user for approval before executing the push command
+- Format commit messages with a clear summary line followed by bullet points describing changes 
 

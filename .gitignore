@@ -266,3 +266,9 @@ local/
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
+
+# Serena MCP
+.serena/
+
+# Drizzle migrations
+drizzle/

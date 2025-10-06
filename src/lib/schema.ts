@@ -50,20 +50,10 @@ export const roleListing = sqliteTable("role_listing", {
   workArrangement: text("work_arrangement").notNull().default("on-site"), // "remote", "hybrid", "on-site"
   capturedAt: integer("captured_at").notNull().default(sql`(strftime('%s','now'))`),
   dataReceivedId: text("data_received_id").references(() => dataReceived.id, { onDelete: "set null" }),
+  status: text("status").notNull().default("not_applied"), // "not_applying", "not_applied", "applied", "interviewed", "rejected", "offered", "declined"
+  appliedAt: integer("applied_at"),
 });
 
-// -----------------------------
-// role_application
-// -----------------------------
-export const roleApplication = sqliteTable("role_application", {
-  id: text("id").primaryKey(), // UUID
-  listingId: text("listing_id")
-    .notNull()
-    .references(() => roleListing.id, { onDelete: "cascade" }), // if listing removed → applications removed
-  status: text("status").notNull(), // "not_applying", "in_progress", "rejected", "offered", "declined"
-  appliedAt: integer("applied_at"),
-  updatedAt: integer("updated_at"),
-});
 
 // -----------------------------
 // role_callout
@@ -107,15 +97,13 @@ export const roleContact = sqliteTable("role_contact", {
 // -----------------------------
 export const roleEvent = sqliteTable("role_event", {
   id: text("id").primaryKey(), // UUID
-  listingId: text("listing_id")
+  eventListingId: text("event_listing_id")
     .notNull()
     .references(() => roleListing.id, { onDelete: "cascade" }), // if listing removed → events removed
-  applicationId: text("application_id").references(() => roleApplication.id, {
-    onDelete: "cascade", // if application removed → its events removed
-  }),
-  title: text("title").notNull(), // e.g. "Phone Screen"
+  eventType: text("event_type").notNull(), // "Interview", "Email", "Phone Call", "Phone Text", "Instant Message", "Application", "Offer", "Rejection", "Decline", "Not Applying"
+  eventTitle: text("event_title").notNull(), // e.g. "Phone Screen"
   eventDate: integer("event_date"), // Unix timestamp
-  notes: text("notes"),
+  eventNotes: text("event_notes"),
 });
 
 // -----------------------------
