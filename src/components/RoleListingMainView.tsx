@@ -31,7 +31,7 @@ interface RoleListingMainViewProps {
 }
 
 export default function RoleListingMainView({ listing, sidebarChildren }: RoleListingMainViewProps) {
-  const [leftWidth, setLeftWidth] = useState(75);
+  const [leftWidth, setLeftWidth] = useState(73);
   const [isDragging, setIsDragging] = useState(false);
   const [isDetailsCollapsed, setIsDetailsCollapsed] = useState(false);
   const [isEventsCollapsed, setIsEventsCollapsed] = useState(false);
@@ -56,7 +56,7 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
   };
 
   const handleDoubleClick = () => {
-    setLeftWidth(75);
+    setLeftWidth(73);
   };
 
   return (
@@ -100,10 +100,16 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
       </div>
 
       <div 
-        className="w-1 bg-gray-600 hover:bg-purple-500 cursor-col-resize"
+        className="w-1 bg-gray-600 hover:bg-purple-500 cursor-col-resize relative"
         onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClick}
-      />
+      >
+        {isDragging && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-900 border border-purple-400 rounded px-3 py-2 text-white text-sm font-semibold whitespace-nowrap shadow-lg z-50">
+            {Math.round(leftWidth)}% / {Math.round(100 - leftWidth)}%
+          </div>
+        )}
+      </div>
 
       <div 
         className="h-full flex flex-col"
