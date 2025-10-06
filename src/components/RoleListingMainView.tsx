@@ -119,14 +119,14 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
         <div className="overflow-y-auto flex-1 p-4 space-y-4">
           <div className="bg-white/5 rounded-lg border border-white/10">
             <div 
-              className="flex items-center justify-between p-4 cursor-pointer"
+              className="flex items-center justify-between p-2 cursor-pointer"
               onClick={() => setIsDetailsCollapsed(!isDetailsCollapsed)}
             >
-              <h3 className="text-purple-300 text-sm font-semibold uppercase tracking-wide">Details</h3>
-              <span className="text-purple-300">{isDetailsCollapsed ? '▼' : '▲'}</span>
+              <h3 className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Details</h3>
+              <span className="text-purple-300 text-xs">{isDetailsCollapsed ? '▼' : '▲'}</span>
             </div>
             {!isDetailsCollapsed && (
-              <div className="px-4 pb-4">
+              <div className="px-2 pb-2">
                 <RoleListingDetails 
                   listing={listing}
                   onClose={() => {}}
@@ -142,8 +142,8 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
           </div>
           
           <div className="bg-white/5 rounded-lg border border-white/10">
-            <div className="flex items-center justify-between p-4">
-              <h3 className="text-purple-300 text-sm font-semibold uppercase tracking-wide">Listing Events</h3>
+            <div className="flex items-center justify-between p-2">
+              <h3 className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Listing Events</h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={(e) => {
@@ -157,22 +157,20 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
                   +
                 </button>
                 <span 
-                  className="text-purple-300 cursor-pointer"
+                  className="text-purple-300 text-xs cursor-pointer"
                   onClick={() => setIsEventsCollapsed(!isEventsCollapsed)}
                 >
                   {isEventsCollapsed ? '▼' : '▲'}
                 </span>
               </div>
             </div>
-            {!isEventsCollapsed && (
-              <div className="px-4 pb-4">
-                <RoleListingEventList 
-                  listing={listing}
-                  onAddEvent={() => setTriggerAddEvent(false)}
-                  triggerAdd={triggerAddEvent}
-                />
-              </div>
-            )}
+            <div className={isEventsCollapsed ? "hidden" : "px-2 pb-2"}>
+              <RoleListingEventList 
+                listing={listing}
+                onAddEvent={() => setTriggerAddEvent(false)}
+                triggerAdd={triggerAddEvent}
+              />
+            </div>
           </div>
         </div>
       </div>
