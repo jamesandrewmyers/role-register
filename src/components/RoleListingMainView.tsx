@@ -142,7 +142,10 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
           </div>
           
           <div className="bg-white/5 rounded-lg border border-white/10">
-            <div className="flex items-center justify-between p-2">
+            <div 
+              className="flex items-center justify-between p-2 cursor-pointer"
+              onClick={() => setIsEventsCollapsed(!isEventsCollapsed)}
+            >
               <h3 className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Listing Events</h3>
               <div className="flex items-center gap-2">
                 <button
@@ -156,10 +159,7 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
                 >
                   +
                 </button>
-                <span 
-                  className="text-purple-300 text-xs cursor-pointer"
-                  onClick={() => setIsEventsCollapsed(!isEventsCollapsed)}
-                >
+                <span className="text-purple-300 text-xs">
                   {isEventsCollapsed ? '▼' : '▲'}
                 </span>
               </div>
