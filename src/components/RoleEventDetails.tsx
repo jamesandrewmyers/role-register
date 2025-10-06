@@ -14,37 +14,67 @@ interface RoleEvent {
 }
 
 interface RoleEventDetailsProps {
-  event: RoleEvent;
+  event?: RoleEvent;
+  listingId?: string;
   onClose: () => void;
 }
 
 const EVENT_TYPES = ["Not Applying", "Decline", "Rejection", "Offer", "Interview", "Application", "Email", "Phone Call", "Phone Text", "Instant Message"];
 
-export default function RoleEventDetails({ event, onClose }: RoleEventDetailsProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedEvent, setEditedEvent] = useState(event);
+export default function RoleEventDetails({ event, listingId, onClose }: RoleEventDetailsProps) {
+  const isCreateMode = !event && !!listingId;
+  const [isEditing, setIsEditing] = useState(isCreateMode);
+  const [editedEvent, setEditedEvent] = useState(event || {
+    id: '',
+    eventListingId: listingId || '',
+    eventType: EVENT_TYPES[0],
+    eventTitle: '',
+    eventDate: null,
+    eventNotes: null,
+  });
 
   const handleSave = async () => {
-    const response = await fetch(`/api/role-listing/${event.eventListingId}/events/${event.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        eventType: editedEvent.eventType,
-        eventTitle: editedEvent.eventTitle,
-        eventDate: editedEvent.eventDate,
-        eventNotes: editedEvent.eventNotes,
-      }),
-    });
-    
-    if (response.ok) {
-      setIsEditing(false);
-      onClose();
+    if (isCreateMode) {
+      const response = await fetch(`/api/role-listing/${listingId}/events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: editedEvent.eventType,
+          eventTitle: editedEvent.eventTitle,
+          eventDate: editedEvent.eventDate,
+          eventNotes: editedEvent.eventNotes,
+        }),
+      });
+      
+      if (response.ok) {
+        onClose();
+      }
+    } else {
+      const response = await fetch(`/api/role-listing/${editedEvent.eventListingId}/events/${editedEvent.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: editedEvent.eventType,
+          eventTitle: editedEvent.eventTitle,
+          eventDate: editedEvent.eventDate,
+          eventNotes: editedEvent.eventNotes,
+        }),
+      });
+      
+      if (response.ok) {
+        setIsEditing(false);
+        onClose();
+      }
     }
   };
 
   const handleCancel = () => {
-    setEditedEvent(event);
-    setIsEditing(false);
+    if (isCreateMode) {
+      onClose();
+    } else {
+      setEditedEvent(event!);
+      setIsEditing(false);
+    }
   };
 
   return (
@@ -67,14 +97,14 @@ export default function RoleEventDetails({ event, onClose }: RoleEventDetailsPro
                 Save
               </button>
             </>
-          ) : (
+          ) : !isCreateMode ? (
             <button
               onClick={() => setIsEditing(true)}
               className="text-purple-300 hover:text-white text-sm"
             >
               Edit
             </button>
-          )}
+          ) : null}
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white"
@@ -98,7 +128,7 @@ export default function RoleEventDetails({ event, onClose }: RoleEventDetailsPro
               ))}
             </select>
           ) : (
-            <div className="text-white text-sm">{event.eventType}</div>
+            <div className="text-white text-sm">{editedEvent.eventType}</div>
           )}
         </div>
 
@@ -112,7 +142,7 @@ export default function RoleEventDetails({ event, onClose }: RoleEventDetailsPro
               className="w-full bg-[#1a0a2e] border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-400"
             />
           ) : (
-            <div className="text-white text-sm">{event.eventTitle}</div>
+            <div className="text-white text-sm">{editedEvent.eventTitle}</div>
           )}
         </div>
 
@@ -144,7 +174,7 @@ export default function RoleEventDetails({ event, onClose }: RoleEventDetailsPro
             />
           ) : (
             <div className="text-white text-sm">
-              {event.eventDate ? new Date(event.eventDate * 1000).toLocaleDateString() : '-'}
+              {editedEvent.eventDate ? new Date(editedEvent.eventDate * 1000).toLocaleDateString() : '-'}
             </div>
           )}
         </div>
@@ -159,14 +189,16 @@ export default function RoleEventDetails({ event, onClose }: RoleEventDetailsPro
               className="w-full bg-[#1a0a2e] border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-400"
             />
           ) : (
-            <div className="text-white text-sm whitespace-pre-wrap">{event.eventNotes || '-'}</div>
+            <div className="text-white text-sm whitespace-pre-wrap">{editedEvent.eventNotes || '-'}</div>
           )}
         </div>
 
-        <div>
-          <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">ID</div>
-          <div className="text-white text-sm">{event.id}</div>
-        </div>
+        {!isCreateMode && (
+          <div>
+            <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">ID</div>
+            <div className="text-white text-sm">{editedEvent.id}</div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -18,6 +18,8 @@ interface RoleEvent {
 
 interface RoleListingEventListProps {
   listing: RoleListing;
+  onAddEvent?: () => void;
+  triggerAdd?: boolean;
 }
 
 const EVENT_TYPE_ORDER = ["Not Applying", "Decline", "Rejection", "Offer", "Interview", "Application", "Email", "Phone Call", "Phone Text", "Instant Message"];
@@ -36,9 +38,10 @@ function sortEvents(events: RoleEvent[]): RoleEvent[] {
   });
 }
 
-export default function RoleListingEventList({ listing }: RoleListingEventListProps) {
+export default function RoleListingEventList({ listing, onAddEvent, triggerAdd }: RoleListingEventListProps) {
   const [events, setEvents] = useState<RoleEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<RoleEvent | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchEvents = async () => {
@@ -54,6 +57,12 @@ export default function RoleListingEventList({ listing }: RoleListingEventListPr
     fetchEvents();
   }, [listing.id]);
 
+  useEffect(() => {
+    if (triggerAdd) {
+      handleAddEvent();
+    }
+  }, [triggerAdd]);
+
   if (isLoading) {
     return <div className="text-gray-400 text-sm">Loading...</div>;
   }
@@ -64,15 +73,25 @@ export default function RoleListingEventList({ listing }: RoleListingEventListPr
 
   const handleCloseDetails = () => {
     setSelectedEvent(null);
+    setIsCreating(false);
     fetchEvents();
+  };
+
+  const handleAddEvent = () => {
+    setIsCreating(true);
+    if (onAddEvent) onAddEvent();
   };
 
   return (
     <>
-      {selectedEvent && (
+      {(selectedEvent || isCreating) && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-8">
           <div className="bg-gradient-to-br from-slate-800 to-purple-900 border border-purple-400/30 rounded-2xl shadow-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <RoleEventDetails event={selectedEvent} onClose={handleCloseDetails} />
+            <RoleEventDetails 
+              event={selectedEvent || undefined} 
+              listingId={isCreating ? listing.id : undefined}
+              onClose={handleCloseDetails} 
+            />
           </div>
         </div>
       )}

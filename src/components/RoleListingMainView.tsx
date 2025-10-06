@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import RoleListingEventList from "./RoleListingEventList";
+import RoleListingDetails from "./RoleListingDetails";
 
 interface RoleListing {
   id: string;
@@ -34,6 +35,8 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
   const [isDragging, setIsDragging] = useState(false);
   const [isDetailsCollapsed, setIsDetailsCollapsed] = useState(false);
   const [isEventsCollapsed, setIsEventsCollapsed] = useState(false);
+  const [triggerAddEvent, setTriggerAddEvent] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const handleMouseDown = () => {
     setIsDragging(true);
@@ -117,46 +120,51 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
               <span className="text-purple-300">{isDetailsCollapsed ? '▼' : '▲'}</span>
             </div>
             {!isDetailsCollapsed && (
-              <div className="px-4 pb-4 space-y-3">
-                <div>
-                  <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">ID</div>
-                  <div className="text-white text-sm">{listing.id}</div>
-                </div>
-                <div>
-                  <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Title</div>
-                  <div className="text-white text-sm">{listing.title}</div>
-                </div>
-                {listing.company && (
-                  <div>
-                    <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Company</div>
-                    <div className="text-white text-sm">{listing.company.name}</div>
-                  </div>
-                )}
-                {listing.location && (
-                  <div>
-                    <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Location</div>
-                    <div className="text-white text-sm">{listing.location.city}, {listing.location.stateAbbreviation}</div>
-                  </div>
-                )}
-                <div>
-                  <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Captured At</div>
-                  <div className="text-white text-sm">{new Date(Number(listing.capturedAt) * 1000).toLocaleString()}</div>
-                </div>
+              <div className="px-4 pb-4">
+                <RoleListingDetails 
+                  listing={listing}
+                  onClose={() => {}}
+                  fieldConfig={{
+                    id: true,
+                    capturedAt: true,
+                    compact: true
+                  }}
+                  inline={true}
+                />
               </div>
             )}
           </div>
           
           <div className="bg-white/5 rounded-lg border border-white/10">
-            <div 
-              className="flex items-center justify-between p-4 cursor-pointer"
-              onClick={() => setIsEventsCollapsed(!isEventsCollapsed)}
-            >
+            <div className="flex items-center justify-between p-4">
               <h3 className="text-purple-300 text-sm font-semibold uppercase tracking-wide">Listing Events</h3>
-              <span className="text-purple-300">{isEventsCollapsed ? '▼' : '▲'}</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEventsCollapsed(false);
+                    setTriggerAddEvent(true);
+                  }}
+                  className="text-purple-300 hover:text-white text-lg"
+                  title="Add Event"
+                >
+                  +
+                </button>
+                <span 
+                  className="text-purple-300 cursor-pointer"
+                  onClick={() => setIsEventsCollapsed(!isEventsCollapsed)}
+                >
+                  {isEventsCollapsed ? '▼' : '▲'}
+                </span>
+              </div>
             </div>
             {!isEventsCollapsed && (
               <div className="px-4 pb-4">
-                <RoleListingEventList listing={listing} />
+                <RoleListingEventList 
+                  listing={listing}
+                  onAddEvent={() => setTriggerAddEvent(false)}
+                  triggerAdd={triggerAddEvent}
+                />
               </div>
             )}
           </div>

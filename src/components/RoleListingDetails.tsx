@@ -19,32 +19,148 @@ interface RoleListing {
   } | null;
 }
 
+interface FieldConfig {
+  id?: boolean;
+  title?: boolean;
+  description?: boolean;
+  company?: boolean;
+  location?: boolean;
+  capturedAt?: boolean;
+  compact?: boolean;
+}
+
 interface RoleListingDetailsProps {
   listing: RoleListing | null;
   onClose: () => void;
+  fieldConfig?: FieldConfig;
+  inline?: boolean;
 }
 
-export default function RoleListingDetails({ listing, onClose }: RoleListingDetailsProps) {
+export default function RoleListingDetails({ listing, onClose, fieldConfig, inline = false }: RoleListingDetailsProps) {
   if (!listing) return null;
 
-  // Create a display object with human-readable values
-  const displayData: Record<string, any> = {
-    id: listing.id,
-    title: listing.title,
-    description: listing.description,
+  const config = fieldConfig || {
+    id: true,
+    title: true,
+    description: true,
+    company: true,
+    location: true,
+    capturedAt: true,
   };
 
-  if (listing.company) {
+  // Create a display object with human-readable values
+  const displayData: Record<string, any> = {};
+
+  if (config.id) {
+    displayData.id = listing.id;
+  }
+
+  if (config.title) {
+    displayData.title = listing.title;
+  }
+
+  if (config.description) {
+    displayData.description = listing.description;
+  }
+
+  if (config.company && listing.company) {
     displayData.company = listing.company.name;
   }
 
-  if (listing.location) {
+  if (config.location && listing.location) {
     displayData.location = `${listing.location.city}, ${listing.location.stateAbbreviation}`;
   }
 
-  displayData.capturedAt = new Date(Number(listing.capturedAt) * 1000).toLocaleString();
+  if (config.capturedAt) {
+    displayData.capturedAt = new Date(Number(listing.capturedAt) * 1000).toLocaleString();
+  }
 
   const entries = Object.entries(displayData).filter(([key, value]) => value !== undefined && value !== null);
+
+  const content = inline ? (
+    <div className="bg-white/5 rounded-lg border border-white/10 p-2 space-y-1">
+      {entries.map(([key, value]) => (
+        <div key={key}>
+          {config.compact ? (
+            <div className="flex items-start gap-2">
+              <div className="text-purple-300 text-xs font-semibold uppercase tracking-wide">
+                {key.replace(/([A-Z])/g, ' $1').trim()}:
+              </div>
+              <div className="text-white break-words text-xs">
+                {typeof value === 'string' && value.length > 200 ? (
+                  <div className="text-sm font-mono bg-black/20 p-3 rounded overflow-x-auto max-h-40 overflow-y-auto">
+                    {value}
+                  </div>
+                ) : (
+                  String(value)
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="text-purple-300 text-xs font-semibold mb-1 uppercase tracking-wide">
+                {key.replace(/([A-Z])/g, ' $1').trim()}
+              </div>
+              <div className="text-white break-words text-xs">
+                {typeof value === 'string' && value.length > 200 ? (
+                  <div className="text-sm font-mono bg-black/20 p-3 rounded overflow-x-auto max-h-40 overflow-y-auto">
+                    {value}
+                  </div>
+                ) : (
+                  String(value)
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className="space-y-3">
+      {entries.map(([key, value]) => (
+        <div
+          key={key}
+          className="bg-white/5 rounded-lg border border-white/10 p-4"
+        >
+          {config.compact ? (
+            <div className="flex items-start gap-2">
+              <div className="text-purple-300 text-sm font-semibold uppercase tracking-wide">
+                {key.replace(/([A-Z])/g, ' $1').trim()}:
+              </div>
+              <div className="text-white break-words">
+                {typeof value === 'string' && value.length > 200 ? (
+                  <div className="text-sm font-mono bg-black/20 p-3 rounded overflow-x-auto max-h-40 overflow-y-auto">
+                    {value}
+                  </div>
+                ) : (
+                  String(value)
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="text-purple-300 text-sm font-semibold mb-1 uppercase tracking-wide">
+                {key.replace(/([A-Z])/g, ' $1').trim()}
+              </div>
+              <div className="text-white break-words">
+                {typeof value === 'string' && value.length > 200 ? (
+                  <div className="text-sm font-mono bg-black/20 p-3 rounded overflow-x-auto max-h-40 overflow-y-auto">
+                    {value}
+                  </div>
+                ) : (
+                  String(value)
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
+  if (inline) {
+    return content;
+  }
 
   return (
     <div
@@ -64,26 +180,8 @@ export default function RoleListingDetails({ listing, onClose }: RoleListingDeta
             ×
           </button>
         </div>
-        <div className="p-6 space-y-3">
-          {entries.map(([key, value]) => (
-            <div
-              key={key}
-              className="bg-white/5 rounded-lg p-4 border border-white/10"
-            >
-              <div className="text-purple-300 text-sm font-semibold mb-1 uppercase tracking-wide">
-                {key.replace(/([A-Z])/g, ' $1').trim()}
-              </div>
-              <div className="text-white break-words">
-                {typeof value === 'string' && value.length > 200 ? (
-                  <div className="text-sm font-mono bg-black/20 p-3 rounded overflow-x-auto max-h-40 overflow-y-auto">
-                    {value}
-                  </div>
-                ) : (
-                  String(value)
-                )}
-              </div>
-            </div>
-          ))}
+        <div className="p-6">
+          {content}
         </div>
       </div>
     </div>
