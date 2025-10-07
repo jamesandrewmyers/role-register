@@ -5,7 +5,7 @@ import AdminDialog from "@/components/AdminDialog";
 import RoleListingMainView from "@/components/RoleListingMainView";
 import DataReceivedDetails from "@/components/DataReceivedDetails";
 import EventInfoDetails from "@/components/EventInfoDetails";
-import RoleListingsList from "@/components/RoleListingsList";
+import RoleListingSearch from "@/components/RoleListingSearch";
 import DataReceivedList from "@/components/DataReceivedList";
 import EventInfoList from "@/components/EventInfoList";
 
@@ -99,7 +99,7 @@ export default function Page() {
     switch (selectedView) {
       case "roleListings":
         return (
-          <RoleListingsList 
+          <RoleListingSearch 
             listings={data?.roleListings || []} 
             onSelectListing={setSelectedListing}
           />
