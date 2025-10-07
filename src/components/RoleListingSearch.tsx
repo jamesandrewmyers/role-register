@@ -37,9 +37,12 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
   const [titleFilter, setTitleFilter] = useState("");
   const [descriptionFilter, setDescriptionFilter] = useState("");
   const [capturedAtFilter, setCapturedAtFilter] = useState<Date | null>(null);
-  const [companyFilter, setCompanyFilter] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
-  const [workArrangementFilter, setWorkArrangementFilter] = useState("");
+  const [companyFilter, setCompanyFilter] = useState<string[]>([]);
+  const [locationFilter, setLocationFilter] = useState<string[]>([]);
+  const [workArrangementFilter, setWorkArrangementFilter] = useState<string[]>([]);
+  
+  const [showAllCompanies, setShowAllCompanies] = useState(false);
+  const [showAllLocations, setShowAllLocations] = useState(false);
   
   const [filteredListings, setFilteredListings] = useState<RoleListing[]>(listings);
   const [companies, setCompanies] = useState<string[]>([]);
@@ -86,19 +89,24 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
       });
     }
     
-    if (companyFilter) {
-      filtered = filtered.filter(l => l.company?.name === companyFilter);
+    if (companyFilter.length > 0) {
+      filtered = filtered.filter(l => 
+        l.company?.name && companyFilter.includes(l.company.name)
+      );
     }
     
-    if (locationFilter) {
+    if (locationFilter.length > 0) {
       filtered = filtered.filter(l => {
         if (!l.location) return false;
-        return `${l.location.city}, ${l.location.stateAbbreviation}` === locationFilter;
+        const locationStr = `${l.location.city}, ${l.location.stateAbbreviation}`;
+        return locationFilter.includes(locationStr);
       });
     }
     
-    if (workArrangementFilter) {
-      filtered = filtered.filter(l => l.workArrangement === workArrangementFilter);
+    if (workArrangementFilter.length > 0) {
+      filtered = filtered.filter(l => 
+        l.workArrangement && workArrangementFilter.includes(l.workArrangement)
+      );
     }
     
     setFilteredListings(filtered);
@@ -133,7 +141,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
       onMouseLeave={handleMouseUp}
     >
       <div 
-        className="h-full overflow-auto p-6"
+        className="h-full overflow-auto p-2"
         style={{ width: `${leftWidth}%` }}
       >
         <h2 className="text-2xl font-bold text-white mb-4">Search Filters</h2>
@@ -182,48 +190,107 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
             <label className="block text-purple-300 text-sm font-semibold mb-2">
               Company
             </label>
-            <select
-              value={companyFilter}
-              onChange={(e) => setCompanyFilter(e.target.value)}
-              className="w-full bg-black/20 border border-purple-400/30 rounded-lg px-4 py-2 text-white"
-            >
-              <option value="">All Companies</option>
-              {companies.map(company => (
-                <option key={company} value={company}>{company}</option>
+            <div className="space-y-2">
+              {(showAllCompanies ? companies : companies.slice(0, 10)).map(company => (
+                <label key={company} className="flex items-center text-white text-sm cursor-pointer hover:text-purple-300">
+                  <input
+                    type="checkbox"
+                    checked={companyFilter.includes(company)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setCompanyFilter([...companyFilter, company]);
+                      } else {
+                        setCompanyFilter(companyFilter.filter(c => c !== company));
+                      }
+                    }}
+                    className="mr-2"
+                  />
+                  {company}
+                </label>
               ))}
-            </select>
+              {companies.length > 10 && !showAllCompanies && (
+                <button
+                  onClick={() => setShowAllCompanies(true)}
+                  className="text-purple-400 text-sm hover:text-purple-300 underline"
+                >
+                  View all ({companies.length})
+                </button>
+              )}
+              {showAllCompanies && (
+                <button
+                  onClick={() => setShowAllCompanies(false)}
+                  className="text-purple-400 text-sm hover:text-purple-300 underline"
+                >
+                  Show less
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="bg-white/5 rounded-lg p-4 border border-white/10">
             <label className="block text-purple-300 text-sm font-semibold mb-2">
               Location
             </label>
-            <select
-              value={locationFilter}
-              onChange={(e) => setLocationFilter(e.target.value)}
-              className="w-full bg-black/20 border border-purple-400/30 rounded-lg px-4 py-2 text-white"
-            >
-              <option value="">All Locations</option>
-              {locations.map(location => (
-                <option key={location} value={location}>{location}</option>
+            <div className="space-y-2">
+              {(showAllLocations ? locations : locations.slice(0, 10)).map(location => (
+                <label key={location} className="flex items-center text-white text-sm cursor-pointer hover:text-purple-300">
+                  <input
+                    type="checkbox"
+                    checked={locationFilter.includes(location)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setLocationFilter([...locationFilter, location]);
+                      } else {
+                        setLocationFilter(locationFilter.filter(l => l !== location));
+                      }
+                    }}
+                    className="mr-2"
+                  />
+                  {location}
+                </label>
               ))}
-            </select>
+              {locations.length > 10 && !showAllLocations && (
+                <button
+                  onClick={() => setShowAllLocations(true)}
+                  className="text-purple-400 text-sm hover:text-purple-300 underline"
+                >
+                  View all ({locations.length})
+                </button>
+              )}
+              {showAllLocations && (
+                <button
+                  onClick={() => setShowAllLocations(false)}
+                  className="text-purple-400 text-sm hover:text-purple-300 underline"
+                >
+                  Show less
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="bg-white/5 rounded-lg p-4 border border-white/10">
             <label className="block text-purple-300 text-sm font-semibold mb-2">
               Work Arrangement
             </label>
-            <select
-              value={workArrangementFilter}
-              onChange={(e) => setWorkArrangementFilter(e.target.value)}
-              className="w-full bg-black/20 border border-purple-400/30 rounded-lg px-4 py-2 text-white"
-            >
-              <option value="">All Arrangements</option>
-              <option value="remote">Remote</option>
-              <option value="hybrid">Hybrid</option>
-              <option value="on-site">On-site</option>
-            </select>
+            <div className="space-y-2">
+              {['hybrid', 'on-site', 'remote'].map(arrangement => (
+                <label key={arrangement} className="flex items-center text-white text-sm cursor-pointer hover:text-purple-300">
+                  <input
+                    type="checkbox"
+                    checked={workArrangementFilter.includes(arrangement)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setWorkArrangementFilter([...workArrangementFilter, arrangement]);
+                      } else {
+                        setWorkArrangementFilter(workArrangementFilter.filter(w => w !== arrangement));
+                      }
+                    }}
+                    className="mr-2"
+                  />
+                  {arrangement.charAt(0).toUpperCase() + arrangement.slice(1)}
+                </label>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -241,7 +308,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
       </div>
 
       <div 
-        className="h-full overflow-auto p-6"
+        className="h-full overflow-auto p-2"
         style={{ width: `${100 - leftWidth}%` }}
       >
         <RoleListingsList listings={filteredListings} onSelectListing={onSelectListing} />
