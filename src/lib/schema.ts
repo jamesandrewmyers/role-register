@@ -140,3 +140,13 @@ export const roleLocation = sqliteTable("role_location", {
   city: text("city").notNull(),
   createdAt: integer("created_at").notNull().default(sql`(strftime('%s','now'))`),
 });
+
+// -----------------------------
+// settings
+// -----------------------------
+export const settings = sqliteTable("settings", {
+  id: text("id").primaryKey(), // UUID
+  name: text("name").notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at").notNull().default(sql`(strftime('%s','now'))`),
+});

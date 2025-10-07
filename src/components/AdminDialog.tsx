@@ -8,13 +8,14 @@ interface AdminDialogProps {
   onClose: () => void;
 }
 
-type TabType = "actions" | "database";
+type TabType = "settings" | "actions" | "database";
 
 export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
   const [tables, setTables] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>("actions");
+  const [activeTab, setActiveTab] = useState<TabType>("settings");
   const [reprocessing, setReprocessing] = useState(false);
+  const [storageLocation, setStorageLocation] = useState<string>("");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -31,8 +32,46 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
       }
     }
 
+    async function fetchSettings() {
+      try {
+        const res = await fetch("/api/settings/storage_location");
+        if (res.ok) {
+          const data = await res.json();
+          setStorageLocation(data.value || "");
+        }
+      } catch (error) {
+        console.log("No storage_location setting found yet");
+      }
+    }
+
     fetchTables();
+    fetchSettings();
   }, [isOpen]);
+
+  const handleFolderSelect = async () => {
+    try {
+      if (typeof window !== 'undefined' && (window as any).electron) {
+        const result = await (window as any).electron.selectFolder();
+        if (result && !result.canceled && result.filePaths.length > 0) {
+          const folderPath = result.filePaths[0];
+          setStorageLocation(folderPath);
+          
+          await fetch("/api/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: "storage_location",
+              value: folderPath
+            })
+          });
+        }
+      } else {
+        alert("This feature requires running the application in Electron. Use 'npm run electron:dev' to start.");
+      }
+    } catch (error) {
+      console.error("Error selecting folder:", error);
+    }
+  };
 
   const handleReprocessAll = async () => {
     const confirmed = confirm("Are you sure you want to reprocess all imported listing data? This will create reprocessing events for all data_received records.");
@@ -95,6 +134,16 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
         <div className="border-b border-purple-400/30">
           <div className="flex gap-2 px-6">
             <button
+              onClick={() => setActiveTab("settings")}
+              className={`px-6 py-3 font-semibold transition-colors ${
+                activeTab === "settings"
+                  ? "text-white border-b-2 border-purple-400"
+                  : "text-purple-300 hover:text-white"
+              }`}
+            >
+              Settings
+            </button>
+            <button
               onClick={() => setActiveTab("actions")}
               className={`px-6 py-3 font-semibold transition-colors ${
                 activeTab === "actions"
@@ -118,6 +167,32 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
+          {activeTab === "settings" && (
+            <div className="space-y-4">
+              <div className="bg-white/5 rounded-lg p-6 border border-white/10">
+                <h3 className="text-white font-semibold mb-4">Storage Location</h3>
+                <p className="text-gray-400 text-sm mb-4">
+                  Select a folder on your local filesystem to store application data
+                </p>
+                <div className="flex gap-4 items-center">
+                  <input
+                    type="text"
+                    value={storageLocation}
+                    readOnly
+                    placeholder="No folder selected"
+                    className="flex-1 bg-black/20 border border-purple-400/30 rounded-lg px-4 py-2 text-white placeholder-gray-500"
+                  />
+                  <button
+                    onClick={handleFolderSelect}
+                    className="px-6 py-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg border border-purple-400/30 text-white font-semibold transition-colors"
+                  >
+                    Browse
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === "actions" && (
             <div className="space-y-4">
               <div className="flex items-center gap-4 bg-white/5 rounded-lg p-4 border border-white/10">
