@@ -31,7 +31,7 @@ interface RoleListingSearchProps {
 }
 
 export default function RoleListingSearch({ listings, onSelectListing }: RoleListingSearchProps) {
-  const [leftWidth, setLeftWidth] = useState(20);
+  const [leftWidth, setLeftWidth] = useState(30);
   const [isDragging, setIsDragging] = useState(false);
   
   const [titleFilter, setTitleFilter] = useState("");
@@ -47,6 +47,9 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
   const [filteredListings, setFilteredListings] = useState<RoleListing[]>(listings);
   const [companies, setCompanies] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
+  const [companyCounts, setCompanyCounts] = useState<Record<string, number>>({});
+  const [locationCounts, setLocationCounts] = useState<Record<string, number>>({});
+  const [workArrangementCounts, setWorkArrangementCounts] = useState<Record<string, number>>({});
   
   useEffect(() => {
     const uniqueCompanies = Array.from(new Set(
@@ -110,6 +113,27 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
     }
     
     setFilteredListings(filtered);
+    
+    const newCompanyCounts: Record<string, number> = {};
+    const newLocationCounts: Record<string, number> = {};
+    const newWorkArrangementCounts: Record<string, number> = {};
+    
+    filtered.forEach(l => {
+      if (l.company?.name) {
+        newCompanyCounts[l.company.name] = (newCompanyCounts[l.company.name] || 0) + 1;
+      }
+      if (l.location) {
+        const locationStr = `${l.location.city}, ${l.location.stateAbbreviation}`;
+        newLocationCounts[locationStr] = (newLocationCounts[locationStr] || 0) + 1;
+      }
+      if (l.workArrangement) {
+        newWorkArrangementCounts[l.workArrangement] = (newWorkArrangementCounts[l.workArrangement] || 0) + 1;
+      }
+    });
+    
+    setCompanyCounts(newCompanyCounts);
+    setLocationCounts(newLocationCounts);
+    setWorkArrangementCounts(newWorkArrangementCounts);
   }, [listings, titleFilter, descriptionFilter, capturedAtFilter, companyFilter, locationFilter, workArrangementFilter]);
 
   const handleMouseDown = () => {
@@ -130,7 +154,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
   };
 
   const handleDoubleClick = () => {
-    setLeftWidth(20);
+    setLeftWidth(30);
   };
 
   return (
@@ -191,7 +215,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
               Company
             </label>
             <div className="space-y-2">
-              {(showAllCompanies ? companies : companies.slice(0, 10)).map(company => (
+              {(showAllCompanies ? companies : companies.slice(0, 5)).map(company => (
                 <label key={company} className="flex items-center text-white text-sm cursor-pointer hover:text-purple-300">
                   <input
                     type="checkbox"
@@ -205,10 +229,10 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
                     }}
                     className="mr-2"
                   />
-                  {company}
+                  {company} ({companyCounts[company] || 0})
                 </label>
               ))}
-              {companies.length > 10 && !showAllCompanies && (
+              {companies.length > 5 && !showAllCompanies && (
                 <button
                   onClick={() => setShowAllCompanies(true)}
                   className="text-purple-400 text-sm hover:text-purple-300 underline"
@@ -232,7 +256,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
               Location
             </label>
             <div className="space-y-2">
-              {(showAllLocations ? locations : locations.slice(0, 10)).map(location => (
+              {(showAllLocations ? locations : locations.slice(0, 5)).map(location => (
                 <label key={location} className="flex items-center text-white text-sm cursor-pointer hover:text-purple-300">
                   <input
                     type="checkbox"
@@ -246,10 +270,10 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
                     }}
                     className="mr-2"
                   />
-                  {location}
+                  {location} ({locationCounts[location] || 0})
                 </label>
               ))}
-              {locations.length > 10 && !showAllLocations && (
+              {locations.length > 5 && !showAllLocations && (
                 <button
                   onClick={() => setShowAllLocations(true)}
                   className="text-purple-400 text-sm hover:text-purple-300 underline"
@@ -287,7 +311,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
                     }}
                     className="mr-2"
                   />
-                  {arrangement.charAt(0).toUpperCase() + arrangement.slice(1)}
+                  {arrangement.charAt(0).toUpperCase() + arrangement.slice(1)} ({workArrangementCounts[arrangement] || 0})
                 </label>
               ))}
             </div>
