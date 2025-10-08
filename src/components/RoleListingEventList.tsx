@@ -74,14 +74,6 @@ export default function RoleListingEventList({ listing, onAddEvent, triggerAdd }
     }
   }, [triggerAdd]);
 
-  if (isLoading) {
-    return <div className="text-gray-400 text-sm">Loading...</div>;
-  }
-
-  if (events.length === 0) {
-    return <div className="text-gray-400 text-sm">No events</div>;
-  }
-
   return (
     <>
       {(selectedEvent || isCreating) && (
@@ -96,30 +88,36 @@ export default function RoleListingEventList({ listing, onAddEvent, triggerAdd }
         </div>
       )}
       
-    <div className="max-h-96 overflow-y-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr>
-            <th className="text-left text-purple-300 text-xs font-semibold uppercase tracking-wide pb-2">Date</th>
-            <th className="text-left text-purple-300 text-xs font-semibold uppercase tracking-wide pb-2">Type</th>
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((event) => (
-            <tr 
-              key={event.id} 
-              className="border-t border-white/10 cursor-pointer hover:bg-white/5"
-              onClick={() => setSelectedEvent(event)}
-            >
-              <td className="text-white py-2">
-                {event.eventDate ? new Date(event.eventDate * 1000).toLocaleDateString() : '-'}
-              </td>
-              <td className="text-white py-2">{event.eventType}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+      {isLoading ? (
+        <div className="text-gray-400 text-sm">Loading...</div>
+      ) : events.length === 0 ? (
+        <div className="text-gray-400 text-sm">No events</div>
+      ) : (
+        <div className="max-h-96 overflow-y-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className="text-left text-purple-300 text-xs font-semibold uppercase tracking-wide pb-2">Date</th>
+                <th className="text-left text-purple-300 text-xs font-semibold uppercase tracking-wide pb-2">Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((event) => (
+                <tr 
+                  key={event.id} 
+                  className="border-t border-white/10 cursor-pointer hover:bg-white/5"
+                  onClick={() => setSelectedEvent(event)}
+                >
+                  <td className="text-white py-2">
+                    {event.eventDate ? new Date(event.eventDate * 1000).toLocaleDateString() : '-'}
+                  </td>
+                  <td className="text-white py-2">{event.eventType}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }
