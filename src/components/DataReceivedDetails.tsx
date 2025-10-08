@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import HtmlViewer from "./HtmlViewer";
 
 interface DataReceived {
   id: string;
@@ -20,6 +21,7 @@ interface DataReceivedDetailsProps {
 
 export default function DataReceivedDetails({ item, onClose }: DataReceivedDetailsProps) {
   const [reprocessing, setReprocessing] = useState(false);
+  const [showHtmlViewer, setShowHtmlViewer] = useState(false);
 
   if (!item) return null;
 
@@ -71,6 +73,27 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
         <div className="sticky top-0 bg-gradient-to-br from-slate-800 to-purple-900 border-b border-purple-400/30 p-6 flex justify-between items-center">
           <h3 className="text-2xl font-bold text-white">Details</h3>
           <div className="flex items-center gap-3">
+            {item.html && (
+              <button
+                onClick={() => setShowHtmlViewer(true)}
+                className="p-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg border border-purple-400/30 transition-colors"
+                title="View HTML"
+              >
+                <svg
+                  className="w-5 h-5 text-purple-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                  />
+                </svg>
+              </button>
+            )}
             <button
               onClick={handleReprocess}
               disabled={reprocessing}
@@ -121,6 +144,9 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
           ))}
         </div>
       </div>
+      {showHtmlViewer && item.html && (
+        <HtmlViewer html={item.html} onClose={() => setShowHtmlViewer(false)} />
+      )}
     </div>
   );
 }
