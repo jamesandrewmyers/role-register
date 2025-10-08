@@ -50,6 +50,9 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
   const [companyCounts, setCompanyCounts] = useState<Record<string, number>>({});
   const [locationCounts, setLocationCounts] = useState<Record<string, number>>({});
   const [workArrangementCounts, setWorkArrangementCounts] = useState<Record<string, number>>({});
+  const [filteredCompanyCounts, setFilteredCompanyCounts] = useState<Record<string, number>>({});
+  const [filteredLocationCounts, setFilteredLocationCounts] = useState<Record<string, number>>({});
+  const [filteredWorkArrangementCounts, setFilteredWorkArrangementCounts] = useState<Record<string, number>>({});
   
   useEffect(() => {
     const uniqueCompanies = Array.from(new Set(
@@ -65,6 +68,27 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
         .filter(Boolean)
     )) as string[];
     setLocations(uniqueLocations.sort());
+    
+    const totalCompanyCounts: Record<string, number> = {};
+    const totalLocationCounts: Record<string, number> = {};
+    const totalWorkArrangementCounts: Record<string, number> = {};
+    
+    listings.forEach(l => {
+      if (l.company?.name) {
+        totalCompanyCounts[l.company.name] = (totalCompanyCounts[l.company.name] || 0) + 1;
+      }
+      if (l.location) {
+        const locationStr = `${l.location.city}, ${l.location.stateAbbreviation}`;
+        totalLocationCounts[locationStr] = (totalLocationCounts[locationStr] || 0) + 1;
+      }
+      if (l.workArrangement) {
+        totalWorkArrangementCounts[l.workArrangement] = (totalWorkArrangementCounts[l.workArrangement] || 0) + 1;
+      }
+    });
+    
+    setCompanyCounts(totalCompanyCounts);
+    setLocationCounts(totalLocationCounts);
+    setWorkArrangementCounts(totalWorkArrangementCounts);
   }, [listings]);
   
   useEffect(() => {
@@ -114,26 +138,26 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
     
     setFilteredListings(filtered);
     
-    const newCompanyCounts: Record<string, number> = {};
-    const newLocationCounts: Record<string, number> = {};
-    const newWorkArrangementCounts: Record<string, number> = {};
+    const newFilteredCompanyCounts: Record<string, number> = {};
+    const newFilteredLocationCounts: Record<string, number> = {};
+    const newFilteredWorkArrangementCounts: Record<string, number> = {};
     
     filtered.forEach(l => {
       if (l.company?.name) {
-        newCompanyCounts[l.company.name] = (newCompanyCounts[l.company.name] || 0) + 1;
+        newFilteredCompanyCounts[l.company.name] = (newFilteredCompanyCounts[l.company.name] || 0) + 1;
       }
       if (l.location) {
         const locationStr = `${l.location.city}, ${l.location.stateAbbreviation}`;
-        newLocationCounts[locationStr] = (newLocationCounts[locationStr] || 0) + 1;
+        newFilteredLocationCounts[locationStr] = (newFilteredLocationCounts[locationStr] || 0) + 1;
       }
       if (l.workArrangement) {
-        newWorkArrangementCounts[l.workArrangement] = (newWorkArrangementCounts[l.workArrangement] || 0) + 1;
+        newFilteredWorkArrangementCounts[l.workArrangement] = (newFilteredWorkArrangementCounts[l.workArrangement] || 0) + 1;
       }
     });
     
-    setCompanyCounts(newCompanyCounts);
-    setLocationCounts(newLocationCounts);
-    setWorkArrangementCounts(newWorkArrangementCounts);
+    setFilteredCompanyCounts(newFilteredCompanyCounts);
+    setFilteredLocationCounts(newFilteredLocationCounts);
+    setFilteredWorkArrangementCounts(newFilteredWorkArrangementCounts);
   }, [listings, titleFilter, descriptionFilter, capturedAtFilter, companyFilter, locationFilter, workArrangementFilter]);
 
   const handleMouseDown = () => {
@@ -216,22 +240,22 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
             </label>
             <div className="space-y-2">
               {(showAllCompanies ? companies : companies.slice(0, 5)).map(company => (
-                <label key={company} className="flex items-center text-white text-sm cursor-pointer hover:text-purple-300">
-                  <input
-                    type="checkbox"
-                    checked={companyFilter.includes(company)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setCompanyFilter([...companyFilter, company]);
-                      } else {
-                        setCompanyFilter(companyFilter.filter(c => c !== company));
-                      }
-                    }}
-                    className="mr-2"
-                  />
-                  {company} ({companyCounts[company] || 0})
-                </label>
-              ))}
+                  <label key={company} className="flex items-center text-white text-sm cursor-pointer hover:text-purple-300">
+                    <input
+                      type="checkbox"
+                      checked={companyFilter.includes(company)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setCompanyFilter([...companyFilter, company]);
+                        } else {
+                          setCompanyFilter(companyFilter.filter(c => c !== company));
+                        }
+                      }}
+                      className="mr-2"
+                    />
+                    {company} ({companyCounts[company] || 0})
+                  </label>
+                ))}
               {companies.length > 5 && !showAllCompanies && (
                 <button
                   onClick={() => setShowAllCompanies(true)}
@@ -257,22 +281,22 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
             </label>
             <div className="space-y-2">
               {(showAllLocations ? locations : locations.slice(0, 5)).map(location => (
-                <label key={location} className="flex items-center text-white text-sm cursor-pointer hover:text-purple-300">
-                  <input
-                    type="checkbox"
-                    checked={locationFilter.includes(location)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setLocationFilter([...locationFilter, location]);
-                      } else {
-                        setLocationFilter(locationFilter.filter(l => l !== location));
-                      }
-                    }}
-                    className="mr-2"
-                  />
-                  {location} ({locationCounts[location] || 0})
-                </label>
-              ))}
+                  <label key={location} className="flex items-center text-white text-sm cursor-pointer hover:text-purple-300">
+                    <input
+                      type="checkbox"
+                      checked={locationFilter.includes(location)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setLocationFilter([...locationFilter, location]);
+                        } else {
+                          setLocationFilter(locationFilter.filter(l => l !== location));
+                        }
+                      }}
+                      className="mr-2"
+                    />
+                    {location} ({locationCounts[location] || 0})
+                  </label>
+                ))}
               {locations.length > 5 && !showAllLocations && (
                 <button
                   onClick={() => setShowAllLocations(true)}
@@ -298,22 +322,22 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
             </label>
             <div className="space-y-2">
               {['hybrid', 'on-site', 'remote'].map(arrangement => (
-                <label key={arrangement} className="flex items-center text-white text-sm cursor-pointer hover:text-purple-300">
-                  <input
-                    type="checkbox"
-                    checked={workArrangementFilter.includes(arrangement)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setWorkArrangementFilter([...workArrangementFilter, arrangement]);
-                      } else {
-                        setWorkArrangementFilter(workArrangementFilter.filter(w => w !== arrangement));
-                      }
-                    }}
-                    className="mr-2"
-                  />
-                  {arrangement.charAt(0).toUpperCase() + arrangement.slice(1)} ({workArrangementCounts[arrangement] || 0})
-                </label>
-              ))}
+                  <label key={arrangement} className="flex items-center text-white text-sm cursor-pointer hover:text-purple-300">
+                    <input
+                      type="checkbox"
+                      checked={workArrangementFilter.includes(arrangement)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setWorkArrangementFilter([...workArrangementFilter, arrangement]);
+                        } else {
+                          setWorkArrangementFilter(workArrangementFilter.filter(w => w !== arrangement));
+                        }
+                      }}
+                      className="mr-2"
+                    />
+                    {arrangement.charAt(0).toUpperCase() + arrangement.slice(1)} ({workArrangementCounts[arrangement] || 0})
+                  </label>
+                ))}
             </div>
           </div>
         </div>
