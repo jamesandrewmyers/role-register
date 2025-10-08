@@ -53,6 +53,17 @@ export default function RoleListingEventList({ listing, onAddEvent, triggerAdd }
     }
   };
 
+  const handleCloseDetails = () => {
+    setSelectedEvent(null);
+    setIsCreating(false);
+    fetchEvents();
+  };
+
+  const handleAddEvent = () => {
+    setIsCreating(true);
+    if (onAddEvent) onAddEvent();
+  };
+
   useEffect(() => {
     fetchEvents();
   }, [listing.id]);
@@ -70,17 +81,6 @@ export default function RoleListingEventList({ listing, onAddEvent, triggerAdd }
   if (events.length === 0) {
     return <div className="text-gray-400 text-sm">No events</div>;
   }
-
-  const handleCloseDetails = () => {
-    setSelectedEvent(null);
-    setIsCreating(false);
-    fetchEvents();
-  };
-
-  const handleAddEvent = () => {
-    setIsCreating(true);
-    if (onAddEvent) onAddEvent();
-  };
 
   return (
     <>
