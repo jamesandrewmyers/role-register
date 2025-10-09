@@ -16,7 +16,7 @@ interface TableViewerProps {
 
 export default function TableViewer({ tableName, rowLimit = 5 }: TableViewerProps) {
   const [columns, setColumns] = useState<Column[]>([]);
-  const [rows, setRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedValue, setSelectedValue] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -142,7 +142,7 @@ export default function TableViewer({ tableName, rowLimit = 5 }: TableViewerProp
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(rows.map(row => row.id)));
+      setSelectedIds(new Set(rows.map(row => String(row.id))));
     } else {
       setSelectedIds(new Set());
     }
@@ -187,7 +187,7 @@ export default function TableViewer({ tableName, rowLimit = 5 }: TableViewerProp
     }
   };
 
-  const renderValue = (value: any, columnName: string) => {
+  const renderValue = (value: unknown) => {
     if (value === null || value === undefined) {
       return <span className="text-gray-500 italic">null</span>;
     }
@@ -304,14 +304,14 @@ export default function TableViewer({ tableName, rowLimit = 5 }: TableViewerProp
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
-                        checked={selectedIds.has(row.id)}
-                        onChange={(e) => handleSelectRow(row.id, e.target.checked)}
+                        checked={selectedIds.has(String(row.id))}
+                        onChange={(e) => handleSelectRow(String(row.id), e.target.checked)}
                         className="w-4 h-4 rounded border-purple-400/30 bg-white/10 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
                       />
                     </td>
                     {columns.map((col) => (
                       <td key={col.name} className="px-4 py-3 text-white">
-                        {renderValue(row[col.name], col.name)}
+                        {renderValue(row[col.name])}
                       </td>
                     ))}
                   </tr>

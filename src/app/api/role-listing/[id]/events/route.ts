@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { roleEvent } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import * as roleEventService from "@/services/roleEventService";
+import { toDTO, toDTOs } from "@/dto/roleEvent.dto";
+import type { RoleListingId } from "@/domain/entities/roleListing";
 import { randomUUID } from "crypto";
 
 export async function GET(
@@ -11,12 +11,9 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const events = await db
-      .select()
-      .from(roleEvent)
-      .where(eq(roleEvent.eventListingId, id));
+    const events = roleEventService.getEventsByListingId(id as RoleListingId);
 
-    return NextResponse.json(events);
+    return NextResponse.json(toDTOs(events));
   } catch (error) {
     console.error("Error fetching role events:", error);
     return NextResponse.json(
@@ -35,18 +32,16 @@ export async function POST(
     const body = await request.json();
     const { eventType, eventTitle, eventDate, eventNotes } = body;
 
-    const newEvent = {
+    const newEvent = roleEventService.createRoleEvent({
       id: randomUUID(),
       eventListingId: id,
       eventType,
       eventTitle,
       eventDate,
       eventNotes,
-    };
+    });
 
-    await db.insert(roleEvent).values(newEvent);
-
-    return NextResponse.json(newEvent);
+    return NextResponse.json(toDTO(newEvent));
   } catch (error) {
     console.error("Error creating role event:", error);
     return NextResponse.json(

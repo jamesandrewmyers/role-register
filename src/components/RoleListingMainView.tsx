@@ -3,30 +3,10 @@
 import { useState } from "react";
 import RoleListingEventList from "./RoleListingEventList";
 import RoleListingDetails from "./RoleListingDetails";
-
-interface RoleListing {
-  id: string;
-  title: string;
-  description: string;
-  capturedAt: string;
-  companyId?: string;
-  company?: {
-    id: string;
-    name: string;
-    website?: string;
-  } | null;
-  location?: {
-    id: string;
-    city: string;
-    stateName: string;
-    stateAbbreviation: string;
-  } | null;
-  status?: string;
-  appliedAt?: number;
-}
+import type { EnrichedRoleListingDTO } from "@/dto/enrichedRoleListing.dto";
 
 interface RoleListingMainViewProps {
-  listing: RoleListing;
+  listing: EnrichedRoleListingDTO;
   sidebarChildren?: React.ReactNode;
 }
 
@@ -36,7 +16,6 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
   const [isDetailsCollapsed, setIsDetailsCollapsed] = useState(false);
   const [isEventsCollapsed, setIsEventsCollapsed] = useState(false);
   const [triggerAddEvent, setTriggerAddEvent] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const handleMouseDown = () => {
     setIsDragging(true);
@@ -78,7 +57,7 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
             )}
             {listing.location && (
               <p className="text-sm text-gray-400">
-                {listing.location.city}, {listing.location.stateAbbreviation}
+                {listing.location.city}, {listing.location.locationState}
               </p>
             )}
           </div>

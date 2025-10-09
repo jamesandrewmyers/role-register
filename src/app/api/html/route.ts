@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import parse, { domToReact, Element } from "html-react-parser";
 import * as cheerio from "cheerio";
 
 // Example: proxy HTML from a remote site

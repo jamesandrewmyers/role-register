@@ -1,11 +1,21 @@
 import { parentPort } from "worker_threads";
 import { randomUUID } from "node:crypto";
-import { db } from "@/lib/db";
-import { eventInfo, dataReceived, roleCompany, roleListing, roleLocation, roleState, roleQualifications } from "@/lib/schema";
-import { and, eq } from "drizzle-orm";
 import * as cheerio from "cheerio";
 import { extractRequirements } from "@/lib/requirementExtractor";
 import { parseLinkedInJob } from "@/lib/linkedIn";
+import * as eventInfoService from "@/services/eventInfoService";
+import * as dataReceivedService from "@/services/dataReceivedService";
+import * as roleCompanyService from "@/services/roleCompanyService";
+import * as roleListingService from "@/services/roleListingService";
+import * as roleLocationService from "@/services/roleLocationService";
+import * as roleStateService from "@/services/roleStateService";
+import * as roleQualificationsService from "@/services/roleQualificationsService";
+import type { EventInfoId } from "@/domain/entities/eventInfo";
+import type { DataReceivedId } from "@/domain/entities/dataReceived";
+import type { RoleCompanyId } from "@/domain/entities/roleCompany";
+import type { RoleListingId } from "@/domain/entities/roleListing";
+import type { RoleLocationId } from "@/domain/entities/roleLocation";
+import type { RoleQualificationsId } from "@/domain/entities/roleQualifications";
 
 if (!parentPort) {
   throw new Error("Worker must be started with a parentPort");
@@ -15,11 +25,7 @@ if (!parentPort) {
 const MAX_RETRIES = 3;
 
 parentPort.on("message", async (eventId: string) => {
-  const job = db
-    .select()
-    .from(eventInfo)
-    .where(eq(eventInfo.id, eventId))
-    .get();
+  const job = eventInfoService.getEventById(eventId as EventInfoId);
 
   if (!job) {
     parentPort?.postMessage({
@@ -31,21 +37,14 @@ parentPort.on("message", async (eventId: string) => {
 
   try {
     // Mark as processing
-    db.update(eventInfo)
-      .set({ status: "processing", updatedAt: new Date().valueOf() })
-      .where(eq(eventInfo.id, eventId))
-      .run();
+    eventInfoService.updateEventStatus(eventId as EventInfoId, "processing");
 
     // 🧑‍💻 Do work based on event type
     if (job.type === "processHtml") {
       const payload = JSON.parse(job.payload);
       console.log("Processing HTML for data_received ID: ", payload.dataReceivedId);
 
-      const dataRecord = db
-        .select()
-        .from(dataReceived)
-        .where(eq(dataReceived.id, payload.dataReceivedId))
-        .get();
+      const dataRecord = dataReceivedService.getDataReceivedById(payload.dataReceivedId as DataReceivedId);
     
       if (!dataRecord) {
         console.log(`Data record not found: ${payload.dataReceivedId}`);
@@ -115,20 +114,15 @@ parentPort.on("message", async (eventId: string) => {
           }
           
           if (jobTitle && companyName && jobDescription) {
-            let companyId = db
-              .select({ id: roleCompany.id })
-              .from(roleCompany)
-              .where(eq(roleCompany.name, companyName))
-              .get()?.id;
+            let companyId = roleCompanyService.getCompanyByName(companyName)?.id;
             
             if (!companyId) {
-              companyId = randomUUID();
-              db.insert(roleCompany)
-                .values({
-                  id: companyId,
-                  name: companyName,
-                })
-                .run();
+              companyId = randomUUID() as RoleCompanyId;
+              roleCompanyService.createCompany({
+                id: companyId,
+                name: companyName,
+                website: null,
+              });
               parsingLog += `[Database] Created company: ${companyName}\n`;
             }
             
@@ -139,33 +133,20 @@ parentPort.on("message", async (eventId: string) => {
               const stateStr = locationParts[1] || '';
               
               if (city && stateStr) {
-                const state = db
-                  .select()
-                  .from(roleState)
-                  .where(eq(roleState.abbreviation, stateStr))
-                  .get();
+                const state = roleStateService.getStateByAbbreviation(stateStr);
                 
                 if (state) {
-                  const existingLocation = db
-                    .select({ id: roleLocation.id })
-                    .from(roleLocation)
-                    .where(and(
-                      eq(roleLocation.city, city),
-                      eq(roleLocation.locationState, state.id)
-                    ))
-                    .get();
+                  const existingLocation = roleLocationService.getLocationByCityAndState(city, state.id);
                   
                   if (existingLocation) {
                     locationId = existingLocation.id;
                   } else {
                     locationId = randomUUID();
-                    db.insert(roleLocation)
-                      .values({
-                        id: locationId,
-                        city,
-                        locationState: state.id,
-                      })
-                      .run();
+                    roleLocationService.createLocation({
+                      id: locationId as RoleLocationId,
+                      city,
+                      locationState: state.id,
+                    });
                     parsingLog += `[Database] Created location: ${city}, ${stateStr}\n`;
                   }
                 } else {
@@ -174,45 +155,39 @@ parentPort.on("message", async (eventId: string) => {
               }
             }
             
-            const existingListing = db
-              .select({ id: roleListing.id })
-              .from(roleListing)
-              .where(eq(roleListing.dataReceivedId, payload.dataReceivedId))
-              .get();
+            const existingListing = roleListingService.getListingByDataReceivedId(payload.dataReceivedId as DataReceivedId);
             
             let listingId: string;
             
             if (existingListing) {
-              listingId = existingListing.id;
+              listingId = existingListing.id as string;
               
-              db.update(roleListing)
-                .set({
-                  companyId,
-                  title: jobTitle,
-                  description: jobDescription,
-                  location: locationId,
-                  capturedAt: new Date().valueOf() / 1000,
-                })
-                .where(eq(roleListing.id, listingId))
-                .run();
+              roleListingService.updateRoleListing(existingListing.id, {
+                companyId: companyId as RoleCompanyId,
+                title: jobTitle,
+                description: jobDescription,
+                location: locationId as RoleLocationId | undefined,
+                workArrangement: workArrangement,
+                capturedAt: Math.floor(new Date().valueOf() / 1000),
+              });
               
-              db.delete(roleQualifications)
-                .where(eq(roleQualifications.listingId, listingId))
-                .run();
+              roleQualificationsService.deleteQualificationsByListingId(existingListing.id);
               
               parsingLog += `[Database] Updated existing role listing: ${jobTitle}\n`;
             } else {
               listingId = randomUUID();
-              db.insert(roleListing)
-                .values({
-                  id: listingId,
-                  companyId,
-                  title: jobTitle,
-                  description: jobDescription,
-                  location: locationId,
-                  dataReceivedId: payload.dataReceivedId,
-                })
-                .run();
+              roleListingService.createRoleListing({
+                id: listingId as RoleListingId,
+                companyId: companyId as RoleCompanyId,
+                title: jobTitle,
+                description: jobDescription,
+                location: locationId as RoleLocationId | null,
+                workArrangement: workArrangement,
+                capturedAt: Math.floor(new Date().valueOf() / 1000),
+                dataReceivedId: payload.dataReceivedId as DataReceivedId,
+                status: "new",
+                appliedAt: null,
+              });
               parsingLog += `[Database] Created role listing: ${jobTitle}\n`;
             }
             
@@ -221,25 +196,21 @@ parentPort.on("message", async (eventId: string) => {
               const niceToHaves = extracted.requirements.filter(r => r.type === 'nice-to-have');
               
               for (const req of requirements) {
-                db.insert(roleQualifications)
-                  .values({
-                    id: randomUUID(),
-                    listingId,
-                    description: req.text,
-                    type: 'requirement',
-                  })
-                  .run();
+                roleQualificationsService.createQualification({
+                  id: randomUUID() as RoleQualificationsId,
+                  listingId: listingId as RoleListingId,
+                  description: req.text,
+                  type: 'requirement',
+                });
               }
               
               for (const nth of niceToHaves) {
-                db.insert(roleQualifications)
-                  .values({
-                    id: randomUUID(),
-                    listingId,
-                    description: nth.text,
-                    type: 'nice to have',
-                  })
-                  .run();
+                roleQualificationsService.createQualification({
+                  id: randomUUID() as RoleQualificationsId,
+                  listingId: listingId as RoleListingId,
+                  description: nth.text,
+                  type: 'nice to have',
+                });
               }
               
               parsingLog += `[Database] Created ${requirements.length} requirements and ${niceToHaves.length} nice-to-haves\n`;
@@ -251,39 +222,26 @@ parentPort.on("message", async (eventId: string) => {
       }
 
       // Store parsing log in processing notes for reliable verification
-      db.update(dataReceived)
-        .set({ 
-          processingNotes: parsingLog,
-          processed: "true" 
-        })
-        .where(eq(dataReceived.id, payload.dataReceivedId))
-        .run();
+      dataReceivedService.updateDataReceived(payload.dataReceivedId as DataReceivedId, {
+        processingNotes: parsingLog,
+        processed: "true",
+      });
 
       // Also log to console (may be buffered/unreliable)
       console.log(parsingLog);
     }
 
     // Mark as done
-    db.update(eventInfo)
-      .set({ status: "done", updatedAt: new Date().valueOf() })
-      .where(eq(eventInfo.id, eventId))
-      .run();
+    eventInfoService.updateEventStatus(eventId as EventInfoId, "done");
 
     parentPort?.postMessage({ eventId, status: "done" });
-  } catch (err: any) {
+  } catch (err: unknown) {
     const retries = (job.retries ?? 0) + 1;
 
     if (retries < MAX_RETRIES) {
       // Put back into pending for retry
-      db.update(eventInfo)
-        .set({
-          status: "pending",
-          retries,
-          updatedAt: new Date().valueOf(),
-          error: String(err),
-        })
-        .where(eq(eventInfo.id, eventId))
-        .run();
+      eventInfoService.updateEventStatus(eventId as EventInfoId, "pending", String(err));
+      eventInfoService.incrementEventRetries(eventId as EventInfoId);
 
       parentPort?.postMessage({
         eventId,
@@ -293,15 +251,8 @@ parentPort.on("message", async (eventId: string) => {
       });
     } else {
       // Mark as permanently failed
-      db.update(eventInfo)
-        .set({
-          status: "error",
-          retries,
-          updatedAt: new Date().valueOf(),
-          error: String(err),
-        })
-        .where(eq(eventInfo.id, eventId))
-        .run();
+      eventInfoService.updateEventStatus(eventId as EventInfoId, "error", String(err));
+      eventInfoService.incrementEventRetries(eventId as EventInfoId);
 
       parentPort?.postMessage({
         eventId,

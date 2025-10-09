@@ -3,15 +3,9 @@
 import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import type { RoleEventDTO } from "@/dto/roleEvent.dto";
 
-interface RoleEvent {
-  id: string;
-  eventListingId: string;
-  eventType: string;
-  eventTitle: string;
-  eventDate: number | null;
-  eventNotes: string | null;
-}
+type RoleEvent = RoleEventDTO;
 
 interface RoleEventDetailsProps {
   event?: RoleEvent;

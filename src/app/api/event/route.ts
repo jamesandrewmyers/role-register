@@ -1,17 +1,17 @@
-import { db } from "@/lib/db";
-import { eventInfo } from "@/lib/schema";
+import * as eventInfoService from "@/services/eventInfoService";
 import { bus } from "@/lib/event";
+import type { EventInfoId } from "@/domain/entities/eventInfo";
 
 export async function POST(req: Request) {
   const { type, payload } = await req.json();
   const id = crypto.randomUUID();
 
-  db.insert(eventInfo).values({
-    id,
+  eventInfoService.createEvent({
+    id: id as EventInfoId,
     type,
     payload: JSON.stringify(payload),
     status: "pending",
-  }).run();
+  });
 
   // notify processor
   bus.emit("event.created", { id });

@@ -1,7 +1,5 @@
-import { NextResponse } from "next/server";
-import * as cheerio from "cheerio";
-import { db } from "@/lib/db";
-import { dataReceived } from "@/lib/schema";
+import * as dataReceivedService from "@/services/dataReceivedService";
+import type { DataReceivedId } from "@/domain/entities/dataReceived";
 import { enqueueEvent } from "@/lib/event";
 import { randomUUID } from "crypto";
 
@@ -25,8 +23,8 @@ export async function POST(request: Request) {
 
     // Insert into data_received table
     const recordId = randomUUID();
-    await db.insert(dataReceived).values({
-      id: recordId,
+    dataReceivedService.createDataReceived({
+      id: recordId as DataReceivedId,
       url,
       title,
       html,

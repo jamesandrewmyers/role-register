@@ -18,7 +18,8 @@ export async function GET(request: Request) {
     }
 
     // Get the table from schema
-    const table = (schema as any)[tableName];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const table = (schema as Record<string, any>)[tableName];
     if (!table) {
       return NextResponse.json(
         { error: "Table not found in schema" },
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
 
     // Get column definitions from Drizzle
     const tableColumns = getTableColumns(table);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const columns = Object.entries(tableColumns).map(([name, col]: [string, any]) => ({
       name,
       type: col.columnType || "unknown",

@@ -2,17 +2,9 @@
 
 import { useState } from "react";
 import HtmlViewer from "./HtmlViewer";
+import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
 
-interface DataReceived {
-  id: string;
-  url: string;
-  title: string;
-  receivedAt: string;
-  processed: string;
-  processingNotes?: string;
-  html?: string;
-  text?: string;
-}
+type DataReceived = DataReceivedDTO;
 
 interface DataReceivedDetailsProps {
   item: DataReceived | null;

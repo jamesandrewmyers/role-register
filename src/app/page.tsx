@@ -8,52 +8,14 @@ import EventInfoDetails from "@/components/EventInfoDetails";
 import RoleListingSearch from "@/components/RoleListingSearch";
 import DataReceivedList from "@/components/DataReceivedList";
 import EventInfoList from "@/components/EventInfoList";
-
-interface DataReceived {
-  id: string;
-  url: string;
-  title: string;
-  receivedAt: string;
-  processed: string;
-  processingNotes?: string;
-  html?: string;
-  text?: string;
-}
-
-interface EventInfo {
-  id: string;
-  type: string;
-  status: string;
-  createdAt: string;
-  updatedAt?: string;
-  error?: string;
-  retries: number;
-  payload?: string;
-}
-
-interface RoleListing {
-  id: string;
-  title: string;
-  description: string;
-  capturedAt: string;
-  companyId?: string;
-  company?: {
-    id: string;
-    name: string;
-    website?: string;
-  } | null;
-  location?: {
-    id: string;
-    city: string;
-    stateName: string;
-    stateAbbreviation: string;
-  } | null;
-}
+import type { EnrichedRoleListingDTO } from "@/dto/enrichedRoleListing.dto";
+import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
+import type { EventInfoDTO } from "@/dto/eventInfo.dto";
 
 interface DashboardData {
-  dataReceived: DataReceived[];
-  eventInfo: EventInfo[];
-  roleListings: RoleListing[];
+  dataReceived: DataReceivedDTO[];
+  eventInfo: EventInfoDTO[];
+  roleListings: EnrichedRoleListingDTO[];
 }
 
 type ViewType = "roleListings" | "dataReceived" | "eventInfo";
@@ -63,9 +25,9 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const [selectedView, setSelectedView] = useState<ViewType>("roleListings");
   const [showAdmin, setShowAdmin] = useState(false);
-  const [selectedListing, setSelectedListing] = useState<RoleListing | null>(null);
-  const [selectedDataReceived, setSelectedDataReceived] = useState<DataReceived | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<EventInfo | null>(null);
+  const [selectedListing, setSelectedListing] = useState<EnrichedRoleListingDTO | null>(null);
+  const [selectedDataReceived, setSelectedDataReceived] = useState<DataReceivedDTO | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventInfoDTO | null>(null);
 
   useEffect(() => {
     async function fetchDashboard() {

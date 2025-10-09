@@ -15,7 +15,8 @@ export async function DELETE(request: Request) {
     }
 
     // Get the table from schema
-    const table = (schema as any)[tableName];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const table = (schema as Record<string, any>)[tableName];
     if (!table) {
       return NextResponse.json(
         { error: "Table not found in schema" },
@@ -24,7 +25,7 @@ export async function DELETE(request: Request) {
     }
 
     // Delete rows by ID
-    const result = await db
+    await db
       .delete(table)
       .where(inArray(table.id, ids));
 

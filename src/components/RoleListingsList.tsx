@@ -1,29 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-
-interface RoleListing {
-  id: string;
-  title: string;
-  description: string;
-  capturedAt: string;
-  companyId?: string;
-  company?: {
-    id: string;
-    name: string;
-    website?: string;
-  } | null;
-  location?: {
-    id: string;
-    city: string;
-    stateName: string;
-    stateAbbreviation: string;
-  } | null;
-}
+import type { EnrichedRoleListingDTO } from "@/dto/enrichedRoleListing.dto";
 
 interface RoleListingsListProps {
-  listings: RoleListing[];
-  onSelectListing: (listing: RoleListing) => void;
+  listings: EnrichedRoleListingDTO[];
+  onSelectListing: (listing: EnrichedRoleListingDTO) => void;
 }
 
 export default function RoleListingsList({ listings, onSelectListing }: RoleListingsListProps) {
@@ -70,12 +52,12 @@ export default function RoleListingsList({ listings, onSelectListing }: RoleList
     };
   }, []);
 
-  const getLocationString = (listing: RoleListing) => {
+  const getLocationString = (listing: EnrichedRoleListingDTO) => {
     if (!listing.location) return "";
-    return `${listing.location.city}, ${listing.location.stateAbbreviation}`;
+    return `${listing.location.city}, ${listing.location.locationState}`;
   };
 
-  const getCompanyName = (listing: RoleListing) => {
+  const getCompanyName = (listing: EnrichedRoleListingDTO) => {
     return listing.company?.name || "";
   };
 

@@ -79,7 +79,7 @@ function parseHtml(html: string): HtmlNode[] {
   return nodes;
 }
 
-let globalFirstMatch = { found: false };
+const globalFirstMatch = { found: false };
 
 function HtmlNodeView({ node, depth = 0, searchTerm = '', firstMatchTracker = globalFirstMatch }: { node: HtmlNode; depth?: number; searchTerm?: string; firstMatchTracker?: { found: boolean } }) {
   const [collapsed, setCollapsed] = useState(false);

@@ -1,15 +1,8 @@
 "use client";
 
-interface EventInfo {
-  id: string;
-  type: string;
-  status: string;
-  createdAt: string;
-  updatedAt?: string;
-  error?: string;
-  retries: number;
-  payload?: string;
-}
+import type { EventInfoDTO } from "@/dto/eventInfo.dto";
+
+type EventInfo = EventInfoDTO;
 
 interface EventInfoListProps {
   events: EventInfo[];
@@ -50,7 +43,7 @@ export default function EventInfoList({ events, onSelectEvent }: EventInfoListPr
                   {event.status}
                 </span>
               </div>
-              {event.retries > 0 && (
+              {(event.retries ?? 0) > 0 && (
                 <div className="text-yellow-300 text-sm mb-1">Retries: {event.retries}</div>
               )}
               {event.error && (

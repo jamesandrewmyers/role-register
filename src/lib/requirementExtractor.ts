@@ -157,7 +157,7 @@ function isNiceToHaveHeader(header: string): boolean {
 function extractFromSection(section: Section): ExtractedRequirement[] {
   const requirements: ExtractedRequirement[] = [];
   
-  let lines = section.content.split(/\n/).filter(l => l.trim().length > 0);
+  const lines = section.content.split(/\n/).filter(l => l.trim().length > 0);
   
   const expandedLines: Array<{text: string, wasBullet: boolean}> = [];
   for (const line of lines) {
@@ -363,7 +363,7 @@ function hasRequirementPattern(text: string): boolean {
 }
 
 function cleanRequirementText(text: string): string {
-  let cleaned = text
+  const cleaned = text
     .replace(/^[\•\-\*\+]\s*/, '')
     .replace(/^\d+[\.)]\s*/, '')
     .trim();

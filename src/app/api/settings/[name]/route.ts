@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { settings } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import * as settingsService from "@/services/settingsService";
+import { toDTO } from "@/dto/settings.dto";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { name: string } }
+  { params }: { params: Promise<{ name: string }> }
 ) {
   try {
-    const setting = db
-      .select()
-      .from(settings)
-      .where(eq(settings.name, params.name))
-      .get();
+    const { name } = await params;
+    const setting = settingsService.getSettingByName(name);
 
     if (!setting) {
       return NextResponse.json(
@@ -21,7 +17,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(setting);
+    return NextResponse.json(toDTO(setting));
   } catch (error) {
     console.error("Error fetching setting:", error);
     return NextResponse.json(
@@ -33,9 +29,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { name: string } }
+  { params }: { params: Promise<{ name: string }> }
 ) {
   try {
+    const { name } = await params;
     const body = await request.json();
     const { value } = body;
 
@@ -46,11 +43,7 @@ export async function PUT(
       );
     }
 
-    const existingSetting = db
-      .select()
-      .from(settings)
-      .where(eq(settings.name, params.name))
-      .get();
+    const existingSetting = settingsService.getSettingByName(name);
 
     if (!existingSetting) {
       return NextResponse.json(
@@ -59,21 +52,11 @@ export async function PUT(
       );
     }
 
-    db.update(settings)
-      .set({
-        value,
-        updatedAt: Math.floor(Date.now() / 1000),
-      })
-      .where(eq(settings.name, params.name))
-      .run();
+    const updatedSetting = settingsService.updateSetting(existingSetting.id, {
+      value,
+    });
 
-    const updatedSetting = db
-      .select()
-      .from(settings)
-      .where(eq(settings.name, params.name))
-      .get();
-
-    return NextResponse.json(updatedSetting);
+    return NextResponse.json(toDTO(updatedSetting!));
   } catch (error) {
     console.error("Error updating setting:", error);
     return NextResponse.json(
@@ -85,14 +68,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { name: string } }
+  { params }: { params: Promise<{ name: string }> }
 ) {
   try {
-    const existingSetting = db
-      .select()
-      .from(settings)
-      .where(eq(settings.name, params.name))
-      .get();
+    const { name } = await params;
+    const existingSetting = settingsService.getSettingByName(name);
 
     if (!existingSetting) {
       return NextResponse.json(
@@ -101,9 +81,7 @@ export async function DELETE(
       );
     }
 
-    db.delete(settings)
-      .where(eq(settings.name, params.name))
-      .run();
+    settingsService.deleteSetting(existingSetting.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

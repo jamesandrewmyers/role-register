@@ -4,30 +4,11 @@ import { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import RoleListingsList from "./RoleListingsList";
-
-interface RoleListing {
-  id: string;
-  title: string;
-  description: string;
-  capturedAt: string;
-  companyId?: string;
-  company?: {
-    id: string;
-    name: string;
-    website?: string;
-  } | null;
-  location?: {
-    id: string;
-    city: string;
-    stateName: string;
-    stateAbbreviation: string;
-  } | null;
-  workArrangement?: string;
-}
+import type { EnrichedRoleListingDTO } from "@/dto/enrichedRoleListing.dto";
 
 interface RoleListingSearchProps {
-  listings: RoleListing[];
-  onSelectListing: (listing: RoleListing) => void;
+  listings: EnrichedRoleListingDTO[];
+  onSelectListing: (listing: EnrichedRoleListingDTO) => void;
 }
 
 export default function RoleListingSearch({ listings, onSelectListing }: RoleListingSearchProps) {
@@ -44,7 +25,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
   const [showAllCompanies, setShowAllCompanies] = useState(false);
   const [showAllLocations, setShowAllLocations] = useState(false);
   
-  const [filteredListings, setFilteredListings] = useState<RoleListing[]>(listings);
+  const [filteredListings, setFilteredListings] = useState<EnrichedRoleListingDTO[]>(listings);
   const [companies, setCompanies] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
   const [companyCounts, setCompanyCounts] = useState<Record<string, number>>({});
@@ -64,7 +45,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
     
     const uniqueLocations = Array.from(new Set(
       listings
-        .map(l => l.location ? `${l.location.city}, ${l.location.stateAbbreviation}` : null)
+        .map(l => l.location ? `${l.location.city}, ${l.location.locationState}` : null)
         .filter(Boolean)
     )) as string[];
     setLocations(uniqueLocations.sort());
@@ -78,7 +59,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
         totalCompanyCounts[l.company.name] = (totalCompanyCounts[l.company.name] || 0) + 1;
       }
       if (l.location) {
-        const locationStr = `${l.location.city}, ${l.location.stateAbbreviation}`;
+        const locationStr = `${l.location.city}, ${l.location.locationState}`;
         totalLocationCounts[locationStr] = (totalLocationCounts[locationStr] || 0) + 1;
       }
       if (l.workArrangement) {
@@ -125,7 +106,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
     if (locationFilter.length > 0) {
       filtered = filtered.filter(l => {
         if (!l.location) return false;
-        const locationStr = `${l.location.city}, ${l.location.stateAbbreviation}`;
+        const locationStr = `${l.location.city}, ${l.location.locationState}`;
         return locationFilter.includes(locationStr);
       });
     }
@@ -147,7 +128,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
         newFilteredCompanyCounts[l.company.name] = (newFilteredCompanyCounts[l.company.name] || 0) + 1;
       }
       if (l.location) {
-        const locationStr = `${l.location.city}, ${l.location.stateAbbreviation}`;
+        const locationStr = `${l.location.city}, ${l.location.locationState}`;
         newFilteredLocationCounts[locationStr] = (newFilteredLocationCounts[locationStr] || 0) + 1;
       }
       if (l.workArrangement) {

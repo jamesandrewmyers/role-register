@@ -1,23 +1,6 @@
 "use client";
 
-interface RoleListing {
-  id: string;
-  title: string;
-  description: string;
-  capturedAt: string;
-  companyId?: string;
-  company?: {
-    id: string;
-    name: string;
-    website?: string;
-  } | null;
-  location?: {
-    id: string;
-    city: string;
-    stateName: string;
-    stateAbbreviation: string;
-  } | null;
-}
+import type { EnrichedRoleListingDTO } from "@/dto/enrichedRoleListing.dto";
 
 interface FieldConfig {
   id?: boolean;
@@ -30,7 +13,7 @@ interface FieldConfig {
 }
 
 interface RoleListingDetailsProps {
-  listing: RoleListing | null;
+  listing: EnrichedRoleListingDTO | null;
   onClose: () => void;
   fieldConfig?: FieldConfig;
   inline?: boolean;
@@ -49,7 +32,7 @@ export default function RoleListingDetails({ listing, onClose, fieldConfig, inli
   };
 
   // Create a display object with human-readable values
-  const displayData: Record<string, any> = {};
+  const displayData: Record<string, string | number> = {};
 
   if (config.id) {
     displayData.id = listing.id;
@@ -68,7 +51,7 @@ export default function RoleListingDetails({ listing, onClose, fieldConfig, inli
   }
 
   if (config.location && listing.location) {
-    displayData.location = `${listing.location.city}, ${listing.location.stateAbbreviation}`;
+    displayData.location = `${listing.location.city}, ${listing.location.locationState}`;
   }
 
   if (config.capturedAt) {

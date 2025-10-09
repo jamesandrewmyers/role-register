@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { settings } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import * as settingsService from "@/services/settingsService";
+import { toDTO, toDTOs } from "@/dto/settings.dto";
+import type { SettingsId } from "@/domain/entities/settings";
 import { randomUUID } from "crypto";
 
 export async function GET() {
   try {
-    const allSettings = db.select().from(settings).all();
-    return NextResponse.json(allSettings);
+    const allSettings = settingsService.getAllSettings();
+    return NextResponse.json(toDTOs(allSettings));
   } catch (error) {
     console.error("Error fetching settings:", error);
     return NextResponse.json(
@@ -29,40 +29,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingSetting = db
-      .select()
-      .from(settings)
-      .where(eq(settings.name, name))
-      .get();
+    const existingSetting = settingsService.getSettingByName(name);
 
     if (existingSetting) {
-      const updated = db
-        .update(settings)
-        .set({
-          value,
-          updatedAt: Math.floor(Date.now() / 1000),
-        })
-        .where(eq(settings.name, name))
-        .run();
+      const updated = settingsService.updateSetting(existingSetting.id, {
+        value,
+      });
 
-      const updatedSetting = db
-        .select()
-        .from(settings)
-        .where(eq(settings.name, name))
-        .get();
-
-      return NextResponse.json(updatedSetting);
+      return NextResponse.json(toDTO(updated!));
     } else {
-      const newSetting = {
-        id: randomUUID(),
+      const newSetting = settingsService.createSetting({
+        id: randomUUID() as SettingsId,
         name,
         value,
         updatedAt: Math.floor(Date.now() / 1000),
-      };
+      });
 
-      db.insert(settings).values(newSetting).run();
-
-      return NextResponse.json(newSetting, { status: 201 });
+      return NextResponse.json(toDTO(newSetting), { status: 201 });
     }
   } catch (error) {
     console.error("Error saving setting:", error);

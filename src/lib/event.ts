@@ -26,7 +26,7 @@ import { db } from "@/lib/db";
 import { eventInfo } from "@/lib/schema";
 
 export interface EventPayload {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export async function enqueueEvent(

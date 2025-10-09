@@ -50,8 +50,8 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
 
   const handleFolderSelect = async () => {
     try {
-      if (typeof window !== 'undefined' && (window as any).electron) {
-        const result = await (window as any).electron.selectFolder();
+      if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).electron) {
+        const result = await (window as unknown as Record<string, { selectFolder: () => Promise<{ canceled: boolean; filePaths: string[] }> }>).electron.selectFolder();
         if (result && !result.canceled && result.filePaths.length > 0) {
           const folderPath = result.filePaths[0];
           setStorageLocation(folderPath);

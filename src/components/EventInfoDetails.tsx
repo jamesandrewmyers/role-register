@@ -1,15 +1,8 @@
 "use client";
 
-interface EventInfo {
-  id: string;
-  type: string;
-  status: string;
-  createdAt: string;
-  updatedAt?: string;
-  error?: string;
-  retries: number;
-  payload?: string;
-}
+import type { EventInfoDTO } from "@/dto/eventInfo.dto";
+
+type EventInfo = EventInfoDTO;
 
 interface EventInfoDetailsProps {
   event: EventInfo | null;

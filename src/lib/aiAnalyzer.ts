@@ -5,7 +5,7 @@ env.localModelPath = 'models/';
 env.allowRemoteModels = true; // Download models on first use
 env.allowLocalModels = true;
 
-let classificationModel: any = null;
+let classificationModel: Awaited<ReturnType<typeof pipeline>> | null = null;
 
 async function initModel() {
   if (!classificationModel) {
@@ -56,10 +56,11 @@ export async function extractJobRequirements(jobDescription: string): Promise<{
 
     for (const sentence of sentences) {
       try {
-        const result = await model(sentence, [
-          'job requirement',
-          'not a requirement'
-        ]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = await (model as any)(sentence, ['job requirement', 'not a requirement']) as {
+          labels: string[];
+          scores: number[];
+        };
         
         if (result && result.labels && result.scores) {
           const topLabel = result.labels[0];
@@ -72,7 +73,7 @@ export async function extractJobRequirements(jobDescription: string): Promise<{
             analysisResults.push(`✗ ${sentence} [${topLabel}] (${(confidence * 100).toFixed(1)}%)`);
           }
         }
-      } catch (err) {
+      } catch {
         continue;
       }
     }

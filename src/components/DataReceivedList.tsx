@@ -1,15 +1,8 @@
 "use client";
 
-interface DataReceived {
-  id: string;
-  url: string;
-  title: string;
-  receivedAt: string;
-  processed: string;
-  processingNotes?: string;
-  html?: string;
-  text?: string;
-}
+import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
+
+type DataReceived = DataReceivedDTO;
 
 interface DataReceivedListProps {
   items: DataReceived[];
