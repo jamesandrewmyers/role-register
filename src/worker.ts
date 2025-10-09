@@ -59,7 +59,7 @@ parentPort.on("message", async (eventId: string) => {
       if (url.hostname === "www.linkedin.com") {
         parsingLog += "[LinkedIn Parser] Parsing job posting...\n";
 
-        const jobFit = $("job-details-fit-level-preferences").text().trim() || "";
+        const jobFit = $(".job-details-fit-level-preferences").text().trim() || "";
 
         const jobTitle =
           $(".job-details-jobs-unified-top-card__job-title").text().trim() ||
