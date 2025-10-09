@@ -79,7 +79,9 @@ function parseHtml(html: string): HtmlNode[] {
   return nodes;
 }
 
-function HtmlNodeView({ node, depth = 0, searchTerm = '' }: { node: HtmlNode; depth?: number; searchTerm?: string }) {
+let globalFirstMatch = { found: false };
+
+function HtmlNodeView({ node, depth = 0, searchTerm = '', firstMatchTracker = globalFirstMatch }: { node: HtmlNode; depth?: number; searchTerm?: string; firstMatchTracker?: { found: boolean } }) {
   const [collapsed, setCollapsed] = useState(false);
   const indent = depth * 20;
 
@@ -88,13 +90,24 @@ function HtmlNodeView({ node, depth = 0, searchTerm = '' }: { node: HtmlNode; de
     const parts = text.split(new RegExp(`(${searchTerm})`, 'gi'));
     return (
       <>
-        {parts.map((part, i) => 
-          part.toLowerCase() === searchTerm.toLowerCase() ? (
-            <mark key={i} className="bg-yellow-400 text-black">{part}</mark>
-          ) : (
-            part
-          )
-        )}
+        {parts.map((part, i) => {
+          if (part.toLowerCase() === searchTerm.toLowerCase()) {
+            const isFirstOccurrence = !firstMatchTracker.found;
+            if (isFirstOccurrence) {
+              firstMatchTracker.found = true;
+            }
+            return (
+              <mark 
+                key={i} 
+                className="bg-yellow-400 text-black"
+                {...(isFirstOccurrence ? { 'data-first-match': 'true' } : {})}
+              >
+                {part}
+              </mark>
+            );
+          }
+          return part;
+        })}
       </>
     );
   };
@@ -139,7 +152,7 @@ function HtmlNodeView({ node, depth = 0, searchTerm = '' }: { node: HtmlNode; de
         {hasChildren && !collapsed && (
           <>
             {node.children!.map((child, idx) => (
-              <HtmlNodeView key={idx} node={child} depth={depth + 1} searchTerm={searchTerm} />
+              <HtmlNodeView key={idx} node={child} depth={depth + 1} searchTerm={searchTerm} firstMatchTracker={firstMatchTracker} />
             ))}
             <div style={{ marginLeft: `${indent}px` }} className="text-blue-400 text-sm py-0.5 font-mono">
               &lt;/{searchTerm ? highlightText(node.tag) : node.tag}&gt;
@@ -157,9 +170,14 @@ export default function HtmlViewer({ html, onClose }: HtmlViewerProps) {
   const nodes = parseHtml(html);
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [renderKey, setRenderKey] = useState(0);
   const [showSearch, setShowSearch] = useState(false);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
+  const firstMatchTrackerRef = useRef({ found: false });
 
   useEffect(() => {
     if (debounceTimerRef.current) {
@@ -167,6 +185,10 @@ export default function HtmlViewer({ html, onClose }: HtmlViewerProps) {
     }
     debounceTimerRef.current = setTimeout(() => {
       setSearchTerm(searchInput);
+      hasScrolledRef.current = false;
+      firstMatchTrackerRef.current = { found: false };
+      setRenderKey(prev => prev + 1);
+      setCurrentMatchIndex(0);
     }, 300);
 
     return () => {
@@ -175,6 +197,26 @@ export default function HtmlViewer({ html, onClose }: HtmlViewerProps) {
       }
     };
   }, [searchInput]);
+
+  useEffect(() => {
+    if (searchTerm && contentRef.current) {
+      setTimeout(() => {
+        const marks = contentRef.current?.querySelectorAll('mark');
+        if (marks && marks.length > 0) {
+          marks[currentMatchIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
+  }, [searchTerm, currentMatchIndex]);
+
+  const navigateToNextMatch = () => {
+    if (!searchTerm || !contentRef.current) return;
+    const marks = contentRef.current.querySelectorAll('mark');
+    if (marks.length > 0) {
+      const nextIndex = (currentMatchIndex + 1) % marks.length;
+      setCurrentMatchIndex(nextIndex);
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -187,12 +229,17 @@ export default function HtmlViewer({ html, onClose }: HtmlViewerProps) {
         setShowSearch(false);
         setSearchInput('');
         setSearchTerm('');
+        setCurrentMatchIndex(0);
+      }
+      if (e.key === 'Enter' && showSearch && searchTerm) {
+        e.preventDefault();
+        navigateToNextMatch();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSearch]);
+  }, [showSearch, searchTerm, currentMatchIndex]);
 
   return (
     <div
@@ -245,9 +292,9 @@ export default function HtmlViewer({ html, onClose }: HtmlViewerProps) {
             />
           </div>
         )}
-        <div className="p-6 overflow-y-auto flex-1 bg-gray-950">
+        <div ref={contentRef} className="p-6 overflow-y-auto flex-1 bg-gray-950" key={renderKey}>
           {nodes.map((node, idx) => (
-            <HtmlNodeView key={idx} node={node} searchTerm={searchTerm} />
+            <HtmlNodeView key={idx} node={node} searchTerm={searchTerm} firstMatchTracker={firstMatchTrackerRef.current} />
           ))}
         </div>
       </div>
