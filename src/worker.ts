@@ -5,6 +5,7 @@ import { eventInfo, dataReceived, roleCompany, roleListing, roleLocation, roleSt
 import { and, eq } from "drizzle-orm";
 import * as cheerio from "cheerio";
 import { extractRequirements } from "@/lib/requirementExtractor";
+import { parseLinkedInJob } from "@/lib/linkedIn";
 
 if (!parentPort) {
   throw new Error("Worker must be started with a parentPort");
@@ -59,54 +60,9 @@ parentPort.on("message", async (eventId: string) => {
       if (url.hostname === "www.linkedin.com") {
         parsingLog += "[LinkedIn Parser] Parsing job posting...\n";
 
-        const jobFit = $(".job-details-fit-level-preferences").text().trim() || "";
+        const { workArrangement, jobTitle, companyName, jobLocation: jobLocationRaw, jobDescription } = parseLinkedInJob($);
 
-        const jobTitle =
-          $(".job-details-jobs-unified-top-card__job-title").text().trim() ||
-          "";
-
-        const companyName =
-          $(".job-details-jobs-unified-top-card__company-name").text().trim() ||
-          "";
-
-        const jobLocationRaw =
-          $(".job-details-jobs-unified-top-card__tertiary-description-container span.tvm__text")
-            .map((_, el) => $(el).text().trim())
-            .get()
-            .find(txt => txt.length > 0) ||
-          "";
-
-        const jobDescriptionElement = $(".jobs-box__html-content");
-        
-        jobDescriptionElement.find('*').removeAttr('class').removeAttr('style').removeAttr('id');
-        
-        jobDescriptionElement.find('ul').each((_, el) => {
-          $(el).css({ 'list-style-type': 'disc', 'margin-left': '1.5rem', 'margin-bottom': '1rem' });
-        });
-        
-        jobDescriptionElement.find('ol').each((_, el) => {
-          $(el).css({ 'list-style-type': 'decimal', 'margin-left': '1.5rem', 'margin-bottom': '1rem' });
-        });
-        
-        jobDescriptionElement.find('li').each((_, el) => {
-          $(el).css({ 'margin-bottom': '0.5rem' });
-        });
-        
-        jobDescriptionElement.find('p').each((_, el) => {
-          $(el).css({ 'margin-bottom': '1rem' });
-        });
-        
-        jobDescriptionElement.find('h1, h2, h3, h4, h5, h6').each((_, el) => {
-          $(el).css({ 'font-weight': 'bold', 'margin-top': '1.5rem', 'margin-bottom': '0.75rem' });
-        });
-        
-        jobDescriptionElement.find('strong, b').each((_, el) => {
-          $(el).css({ 'font-weight': 'bold' });
-        });
-        
-        const jobDescription = jobDescriptionElement.html()?.trim() || "";
-
-        parsingLog += `[LinkedIn Parser] Job Fit: ${jobFit}\n`;
+        parsingLog += `[LinkedIn Parser] Work Arrangement: ${workArrangement}\n`;
         parsingLog += `[LinkedIn Parser] Job Title: ${jobTitle}\n`;
         parsingLog += `[LinkedIn Parser] Company Name: ${companyName}\n`;
         parsingLog += `[LinkedIn Parser] Job Location: ${jobLocationRaw}\n`;
