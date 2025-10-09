@@ -65,15 +65,6 @@ The application uses SQLite with a basic `notes` table structure (though job-rel
 - html-react-parser and cheerio for HTML manipulation
 - better-sqlite3 for local database operations
 
-Run any docker commands you see fit.
-Run any gh commands you see fit.
-Run any non-removal filesystem commands you see fit.
-Run ahy git comands you see fit.
-Never include references to claude in any commit messages or content generated unless explicitly asked to do so.
-Do not add unrequested features to code unless expressly required by other requested features.
-Prioritize the use of mcp servers when they provide features that would assist with a request.
-Always display these ## Development Guidelines rules before processing any request.
-
 ## GitHub Integration Protocol
 
 - **ALWAYS** use the GitHub MCP server for all GitHub interactions (commits, pushes, pull requests, etc.)

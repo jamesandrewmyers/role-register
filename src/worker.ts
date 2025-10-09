@@ -59,6 +59,8 @@ parentPort.on("message", async (eventId: string) => {
       if (url.hostname === "www.linkedin.com") {
         parsingLog += "[LinkedIn Parser] Parsing job posting...\n";
 
+        const jobFit = $("job-details-fit-level-preferences").text().trim() || "";
+
         const jobTitle =
           $(".job-details-jobs-unified-top-card__job-title").text().trim() ||
           "";
@@ -104,6 +106,7 @@ parentPort.on("message", async (eventId: string) => {
         
         const jobDescription = jobDescriptionElement.html()?.trim() || "";
 
+        parsingLog += `[LinkedIn Parser] Job Fit: ${jobFit}\n`;
         parsingLog += `[LinkedIn Parser] Job Title: ${jobTitle}\n`;
         parsingLog += `[LinkedIn Parser] Company Name: ${companyName}\n`;
         parsingLog += `[LinkedIn Parser] Job Location: ${jobLocationRaw}\n`;
