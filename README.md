@@ -112,24 +112,69 @@ npm test
 
 ## Architecture
 
+### Domain-Driven Design
+
+RoleRegister follows Domain-Driven Design (DDD) principles with clear separation of concerns:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     Presentation Layer                   │
+│  (React Components, Next.js API Routes)                 │
+│  Uses: DTOs (Data Transfer Objects)                     │
+└─────────────────┬───────────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────────────┐
+│                      Service Layer                       │
+│  (Business Logic, Data Orchestration)                   │
+│  Uses: Domain Entities with Branded Types               │
+└─────────────────┬───────────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────────────┐
+│                     Mapper Layer                         │
+│  (Persistence ↔ Domain Translation)                     │
+│  Converts: DB Records ↔ Domain Entities                 │
+└─────────────────┬───────────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────────────┐
+│                   Persistence Layer                      │
+│  (SQLite Database via Drizzle ORM)                      │
+│  Schema: Tables, Columns, Relations                     │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key Architectural Components:**
+
+- **Domain Entities** (`src/domain/entities/`): Type-safe business objects with branded IDs
+- **Mappers** (`src/domain/mappers/`): Convert between database records and domain entities
+- **Services** (`src/services/`): Business logic using domain entities exclusively
+- **DTOs** (`src/dto/`): Data Transfer Objects for API/UI layer
+- **Persistence** (`src/lib/schema.ts`, `src/lib/db.ts`): Database schema and connection
+
 ### Data Flow
 
 1. **Capture**: Chrome extension sends job posting HTML to `/api/import`
-2. **Store**: Raw HTML stored in `data_received` table
-3. **Queue**: Processing event created in `event_info` table
-4. **Process**: Worker thread parses HTML, extracts data, stores in `role_listing` and `role_qualifications`
-5. **Display**: UI shows processed listings with events and status tracking
+2. **Store**: Raw HTML stored in database via `dataReceivedService`
+3. **Queue**: Processing event created via `eventInfoService`
+4. **Process**: Worker thread parses HTML using `LinkedInParser`, creates domain entities via services
+5. **Transform**: Services use mappers to persist domain entities to database
+6. **Serve**: API routes convert domain entities to DTOs for presentation layer
+7. **Display**: React components consume DTOs to render UI
 
 ### Database Schema
 
+**Core Tables:**
 - `data_received`: Raw captured HTML and metadata
-- `role_listing`: Processed job postings
+- `role_listing`: Processed job postings with status tracking
 - `role_company`: Normalized company data
 - `role_location`: Normalized location data (city/state)
 - `role_state`: US state reference data
 - `role_qualifications`: Extracted requirements (required and nice-to-have)
 - `role_listing_event`: Application timeline events
 - `event_info`: Background processing queue
+- `settings`: Application configuration
+
+**Type Safety:**
+All entities use branded types (e.g., `RoleListingId`, `RoleCompanyId`) to prevent ID mixing at compile time.
 
 ---
 
