@@ -1,21 +1,20 @@
 import type { RoleLocation } from "@/domain/entities/roleLocation";
+import type { RoleState } from "@/domain/entities/roleState";
+import type { RoleStateDTO } from "./roleState.dto";
+import { toDTO as roleStateToDTO } from "./roleState.dto";
 
 export interface RoleLocationDTO {
   id: string;
-  locationState: string;
   city: string;
+  locationState: RoleStateDTO;
   createdAt: number;
 }
 
-export function toDTO(entity: RoleLocation): RoleLocationDTO {
+export function toDTOWithState(location: RoleLocation, state: RoleState): RoleLocationDTO {
   return {
-    id: entity.id as string,
-    locationState: entity.locationState as string,
-    city: entity.city,
-    createdAt: entity.createdAt,
+    id: location.id as string,
+    city: location.city,
+    locationState: roleStateToDTO(state),
+    createdAt: location.createdAt,
   };
-}
-
-export function toDTOs(entities: RoleLocation[]): RoleLocationDTO[] {
-  return entities.map(toDTO);
 }

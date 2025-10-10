@@ -5,6 +5,8 @@ import * as roleListingService from "@/services/roleListingService";
 import { toDTO as dataReceivedToDTO } from "@/dto/dataReceived.dto";
 import { toDTO as eventInfoToDTO } from "@/dto/eventInfo.dto";
 import { toDTO as roleListingToDTO } from "@/dto/roleListing.dto";
+import { toDTO as roleCompanyToDTO } from "@/dto/roleCompany.dto";
+import { toDTOWithState as roleLocationToDTO } from "@/dto/roleLocation.dto";
 
 export async function GET() {
   try {
@@ -17,8 +19,10 @@ export async function GET() {
       const enriched = roleListingService.getRoleListingWithRelations(listing.id);
       return enriched ? {
         ...roleListingToDTO(enriched),
-        company: enriched.company || null,
-        location: enriched.locationDetails || null,
+        company: enriched.company ? roleCompanyToDTO(enriched.company) : null,
+        location: enriched.locationDetails && enriched.stateDetails 
+          ? roleLocationToDTO(enriched.locationDetails, enriched.stateDetails) 
+          : null,
       } : roleListingToDTO(listing);
     });
 

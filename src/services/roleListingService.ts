@@ -2,7 +2,13 @@ import { db } from "@/lib/db";
 import { roleListing, roleCompany, roleLocation, roleState } from "@/lib/schema";
 import { eq, desc, and, or, like } from "drizzle-orm";
 import * as mapper from "@/domain/mappers/roleListingMapper";
+import * as roleCompanyMapper from "@/domain/mappers/roleCompanyMapper";
+import * as roleLocationMapper from "@/domain/mappers/roleLocationMapper";
+import * as roleStateMapper from "@/domain/mappers/roleStateMapper";
 import type { RoleListing, RoleListingId } from "@/domain/entities/roleListing";
+import type { RoleCompany } from "@/domain/entities/roleCompany";
+import type { RoleLocation } from "@/domain/entities/roleLocation";
+import type { RoleState } from "@/domain/entities/roleState";
 import type { DataReceivedId } from "@/domain/entities/dataReceived";
 
 export interface RoleListingFilters {
@@ -146,8 +152,9 @@ export function getListingByDataReceivedId(dataReceivedId: DataReceivedId): Role
 }
 
 export interface RoleListingWithRelations extends RoleListing {
-  company?: { id: string; name: string; website: string | null } | null;
-  locationDetails?: { id: string; city: string; state: string; stateAbbr: string } | null;
+  company?: RoleCompany | null;
+  locationDetails?: RoleLocation | null;
+  stateDetails?: RoleState | null;
 }
 
 export function getRoleListingWithRelations(id: RoleListingId): RoleListingWithRelations | null {
@@ -157,46 +164,36 @@ export function getRoleListingWithRelations(id: RoleListingId): RoleListingWithR
   const result: RoleListingWithRelations = { ...listing };
   
   if (listing.companyId) {
-    const company = db
+    const companyRow = db
       .select()
       .from(roleCompany)
       .where(eq(roleCompany.id, listing.companyId as string))
       .get();
     
-    if (company) {
-      result.company = {
-        id: company.id,
-        name: company.name,
-        website: company.website,
-      };
+    if (companyRow) {
+      result.company = roleCompanyMapper.toDomain(companyRow);
     }
   }
   
   if (listing.location) {
-    const location = db
-      .select({
-        id: roleLocation.id,
-        city: roleLocation.city,
-        stateId: roleLocation.locationState,
-      })
+    const locationRow = db
+      .select()
       .from(roleLocation)
       .where(eq(roleLocation.id, listing.location as string))
       .get();
     
-    if (location) {
-      const state = db
+    if (locationRow) {
+      result.locationDetails = roleLocationMapper.toDomain(locationRow);
+      
+      // Fetch state details
+      const stateRow = db
         .select()
         .from(roleState)
-        .where(eq(roleState.id, location.stateId))
+        .where(eq(roleState.id, locationRow.locationState))
         .get();
       
-      if (state) {
-        result.locationDetails = {
-          id: location.id,
-          city: location.city,
-          state: state.name,
-          stateAbbr: state.abbreviation,
-        };
+      if (stateRow) {
+        result.stateDetails = roleStateMapper.toDomain(stateRow);
       }
     }
   }

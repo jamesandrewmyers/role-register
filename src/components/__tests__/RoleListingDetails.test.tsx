@@ -16,8 +16,13 @@ const mockListing = {
   location: {
     id: 'location-1',
     city: 'Portland',
-    stateName: 'Oregon',
-    locationState: 'OR',
+    locationState: {
+      id: 'state-1',
+      name: 'Oregon',
+      abbreviation: 'OR',
+      createdAt: 1704067200,
+    },
+    createdAt: 1704067200,
   },
 };
 

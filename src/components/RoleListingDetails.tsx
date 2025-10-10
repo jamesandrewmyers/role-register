@@ -51,7 +51,7 @@ export default function RoleListingDetails({ listing, onClose, fieldConfig, inli
   }
 
   if (config.location && listing.location) {
-    displayData.location = `${listing.location.city}, ${listing.location.locationState}`;
+    displayData.location = `${listing.location.city}, ${listing.location.locationState.abbreviation}`;
   }
 
   if (config.capturedAt) {
