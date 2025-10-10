@@ -57,7 +57,7 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
             )}
             {listing.location && (
               <p className="text-sm text-gray-400">
-                {listing.location.city}, {listing.location.locationState.abbreviation}
+                {listing.location.city}, {listing.location.state.abbreviation}
               </p>
             )}
           </div>

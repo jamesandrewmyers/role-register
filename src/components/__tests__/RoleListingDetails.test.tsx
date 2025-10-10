@@ -16,7 +16,7 @@ const mockListing = {
   location: {
     id: 'location-1',
     city: 'Portland',
-    locationState: {
+    state: {
       id: 'state-1',
       name: 'Oregon',
       abbreviation: 'OR',

@@ -153,8 +153,6 @@ export function getListingByDataReceivedId(dataReceivedId: DataReceivedId): Role
 
 export interface RoleListingWithRelations extends RoleListing {
   company?: RoleCompany | null;
-  locationDetails?: RoleLocation | null;
-  stateDetails?: RoleState | null;
 }
 
 export function getRoleListingWithRelations(id: RoleListingId): RoleListingWithRelations | null {
@@ -172,29 +170,6 @@ export function getRoleListingWithRelations(id: RoleListingId): RoleListingWithR
     
     if (companyRow) {
       result.company = roleCompanyMapper.toDomain(companyRow);
-    }
-  }
-  
-  if (listing.location) {
-    const locationRow = db
-      .select()
-      .from(roleLocation)
-      .where(eq(roleLocation.id, listing.location as string))
-      .get();
-    
-    if (locationRow) {
-      result.locationDetails = roleLocationMapper.toDomain(locationRow);
-      
-      // Fetch state details
-      const stateRow = db
-        .select()
-        .from(roleState)
-        .where(eq(roleState.id, locationRow.locationState))
-        .get();
-      
-      if (stateRow) {
-        result.stateDetails = roleStateMapper.toDomain(stateRow);
-      }
     }
   }
   

@@ -45,7 +45,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
     
     const uniqueLocations = Array.from(new Set(
       listings
-        .map(l => l.location ? `${l.location.city}, ${l.location.locationState.abbreviation}` : null)
+        .map(l => l.location ? `${l.location.city}, ${l.location.state.abbreviation}` : null)
         .filter(Boolean)
     )) as string[];
     setLocations(uniqueLocations.sort());
@@ -59,7 +59,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
         totalCompanyCounts[l.company.name] = (totalCompanyCounts[l.company.name] || 0) + 1;
       }
       if (l.location) {
-        const locationStr = `${l.location.city}, ${l.location.locationState.abbreviation}`;
+        const locationStr = `${l.location.city}, ${l.location.state.abbreviation}`;
         totalLocationCounts[locationStr] = (totalLocationCounts[locationStr] || 0) + 1;
       }
       if (l.workArrangement) {
@@ -106,7 +106,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
     if (locationFilter.length > 0) {
       filtered = filtered.filter(l => {
         if (!l.location) return false;
-        const locationStr = `${l.location.city}, ${l.location.locationState.abbreviation}`;
+        const locationStr = `${l.location.city}, ${l.location.state.abbreviation}`;
         return locationFilter.includes(locationStr);
       });
     }
@@ -128,7 +128,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
         newFilteredCompanyCounts[l.company.name] = (newFilteredCompanyCounts[l.company.name] || 0) + 1;
       }
       if (l.location) {
-        const locationStr = `${l.location.city}, ${l.location.locationState.abbreviation}`;
+        const locationStr = `${l.location.city}, ${l.location.state.abbreviation}`;
         newFilteredLocationCounts[locationStr] = (newFilteredLocationCounts[locationStr] || 0) + 1;
       }
       if (l.workArrangement) {

@@ -272,3 +272,8 @@ local/
 
 # Drizzle migrations
 drizzle/
+
+# Migration planning documents
+MIGRATION_PLAN.md
+DOMAIN_REFACTOR_PLAN.md
+*_PLAN.md

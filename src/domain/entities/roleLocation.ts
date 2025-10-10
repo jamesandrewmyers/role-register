@@ -1,10 +1,10 @@
-import type { RoleStateId } from "./roleState";
+import type { RoleState } from "./roleState";
 
 export type RoleLocationId = string & { readonly brand: unique symbol };
 
 export interface RoleLocation {
   id: RoleLocationId;
-  locationState: RoleStateId;
+  state: RoleState;
   city: string;
   createdAt: number;
 }

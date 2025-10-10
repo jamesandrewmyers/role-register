@@ -54,7 +54,7 @@ export default function RoleListingsList({ listings, onSelectListing }: RoleList
 
   const getLocationString = (listing: EnrichedRoleListingDTO) => {
     if (!listing.location) return "";
-    return `${listing.location.city}, ${listing.location.locationState.abbreviation}`;
+    return `${listing.location.city}, ${listing.location.state.abbreviation}`;
   };
 
   const getCompanyName = (listing: EnrichedRoleListingDTO) => {
