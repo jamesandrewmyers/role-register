@@ -6,7 +6,7 @@ import { toDTO as dataReceivedToDTO } from "@/dto/dataReceived.dto";
 import { toDTO as eventInfoToDTO } from "@/dto/eventInfo.dto";
 import { toDTO as roleListingToDTO } from "@/dto/roleListing.dto";
 import { toDTO as roleCompanyToDTO } from "@/dto/roleCompany.dto";
-import { toDTOWithState as roleLocationToDTO } from "@/dto/roleLocation.dto";
+import { toDTO as roleLocationToDTO } from "@/dto/roleLocation.dto";
 
 export async function GET() {
   try {
