@@ -11,7 +11,7 @@ export interface RoleQualificationsDTO {
 export function toDTO(entity: RoleQualifications): RoleQualificationsDTO {
   return {
     id: entity.id as string,
-    listingId: entity.listingId as string,
+    listingId: entity.listing.id as string,
     description: entity.description,
     type: entity.type,
     createdAt: entity.createdAt,

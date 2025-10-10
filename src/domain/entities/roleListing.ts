@@ -1,18 +1,18 @@
-import type { RoleCompanyId } from "./roleCompany";
+import type { RoleCompany } from "./roleCompany";
 import type { RoleLocation } from "./roleLocation";
-import type { DataReceivedId } from "./dataReceived";
+import type { DataReceived } from "./dataReceived";
 
 export type RoleListingId = string & { readonly brand: unique symbol };
 
 export interface RoleListing {
   id: RoleListingId;
-  companyId: RoleCompanyId | null;
+  company: RoleCompany | null;
   title: string;
   description: string;
   location: RoleLocation | null;
   workArrangement: string;
   capturedAt: number;
-  dataReceivedId: DataReceivedId | null;
+  dataReceived: DataReceived | null;
   status: string;
   appliedAt: number | null;
 }

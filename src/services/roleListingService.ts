@@ -1,14 +1,8 @@
 import { db } from "@/lib/db";
-import { roleListing, roleCompany, roleLocation, roleState } from "@/lib/schema";
+import { roleListing } from "@/lib/schema";
 import { eq, desc, and, or, like } from "drizzle-orm";
 import * as mapper from "@/domain/mappers/roleListingMapper";
-import * as roleCompanyMapper from "@/domain/mappers/roleCompanyMapper";
-import * as roleLocationMapper from "@/domain/mappers/roleLocationMapper";
-import * as roleStateMapper from "@/domain/mappers/roleStateMapper";
 import type { RoleListing, RoleListingId } from "@/domain/entities/roleListing";
-import type { RoleCompany } from "@/domain/entities/roleCompany";
-import type { RoleLocation } from "@/domain/entities/roleLocation";
-import type { RoleState } from "@/domain/entities/roleState";
 import type { DataReceivedId } from "@/domain/entities/dataReceived";
 
 export interface RoleListingFilters {
@@ -151,27 +145,3 @@ export function getListingByDataReceivedId(dataReceivedId: DataReceivedId): Role
   return result ? mapper.toDomain(result) : null;
 }
 
-export interface RoleListingWithRelations extends RoleListing {
-  company?: RoleCompany | null;
-}
-
-export function getRoleListingWithRelations(id: RoleListingId): RoleListingWithRelations | null {
-  const listing = getRoleListingById(id);
-  if (!listing) return null;
-  
-  const result: RoleListingWithRelations = { ...listing };
-  
-  if (listing.companyId) {
-    const companyRow = db
-      .select()
-      .from(roleCompany)
-      .where(eq(roleCompany.id, listing.companyId as string))
-      .get();
-    
-    if (companyRow) {
-      result.company = roleCompanyMapper.toDomain(companyRow);
-    }
-  }
-  
-  return result;
-}

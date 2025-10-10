@@ -12,7 +12,7 @@ export interface RoleEventDTO {
 export function toDTO(entity: RoleEvent): RoleEventDTO {
   return {
     id: entity.id as string,
-    eventListingId: entity.eventListingId as string,
+    eventListingId: entity.listing.id as string,
     eventType: entity.eventType,
     eventTitle: entity.eventTitle,
     eventDate: entity.eventDate,

@@ -1,11 +1,7 @@
 import type { RoleListingDTO } from "./roleListing.dto";
-import type { RoleCompanyDTO } from "./roleCompany.dto";
-import type { RoleLocationDTO } from "./roleLocation.dto";
 
 /**
- * Enriched role listing DTO with joined company and location data
- * Used by dashboard and detail views
+ * Enriched role listing DTO - now just an alias since RoleListingDTO
+ * already includes nested company and location data
  */
-export interface EnrichedRoleListingDTO extends RoleListingDTO {
-  company?: RoleCompanyDTO | null;
-}
+export type EnrichedRoleListingDTO = RoleListingDTO;

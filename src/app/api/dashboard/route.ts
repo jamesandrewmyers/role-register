@@ -5,27 +5,17 @@ import * as roleListingService from "@/services/roleListingService";
 import { toDTO as dataReceivedToDTO } from "@/dto/dataReceived.dto";
 import { toDTO as eventInfoToDTO } from "@/dto/eventInfo.dto";
 import { toDTO as roleListingToDTO } from "@/dto/roleListing.dto";
-import { toDTO as roleCompanyToDTO } from "@/dto/roleCompany.dto";
 
 export async function GET() {
   try {
     const receivedData = dataReceivedService.getAllDataReceived();
     const events = eventInfoService.getAllEvents();
-    const rawListings = roleListingService.getAllRoleListings();
-
-    // Enrich listings with company data
-    const listings = rawListings.map((listing) => {
-      const enriched = roleListingService.getRoleListingWithRelations(listing.id);
-      return enriched ? {
-        ...roleListingToDTO(enriched),
-        company: enriched.company ? roleCompanyToDTO(enriched.company) : null,
-      } : roleListingToDTO(listing);
-    });
+    const listings = roleListingService.getAllRoleListings();
 
     return NextResponse.json({
       dataReceived: receivedData.map(dataReceivedToDTO),
       eventInfo: events.map(eventInfoToDTO),
-      roleListings: listings,
+      roleListings: listings.map(roleListingToDTO),
     });
   } catch (error) {
     console.error("Dashboard data fetch error:", error);

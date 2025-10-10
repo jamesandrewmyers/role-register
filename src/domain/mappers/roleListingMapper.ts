@@ -1,13 +1,27 @@
 import { db } from "@/lib/db";
-import { roleLocation } from "@/lib/schema";
+import { roleLocation, roleCompany, dataReceived } from "@/lib/schema";
 import type { roleListing } from "@/lib/schema";
 import type { RoleListing, RoleListingId } from "../entities/roleListing";
-import type { RoleCompanyId } from "../entities/roleCompany";
-import type { DataReceivedId } from "../entities/dataReceived";
 import { eq } from "drizzle-orm";
 import * as roleLocationMapper from "./roleLocationMapper";
+import * as roleCompanyMapper from "./roleCompanyMapper";
+import * as dataReceivedMapper from "./dataReceivedMapper";
 
 export function toDomain(dbResult: typeof roleListing.$inferSelect): RoleListing {
+  // Fetch related company entity if present
+  let companyEntity = null;
+  if (dbResult.companyId) {
+    const companyRow = db
+      .select()
+      .from(roleCompany)
+      .where(eq(roleCompany.id, dbResult.companyId))
+      .get();
+    
+    if (companyRow) {
+      companyEntity = roleCompanyMapper.toDomain(companyRow);
+    }
+  }
+  
   // Fetch related location entity if present
   let locationEntity = null;
   if (dbResult.location) {
@@ -22,15 +36,29 @@ export function toDomain(dbResult: typeof roleListing.$inferSelect): RoleListing
     }
   }
   
+  // Fetch related dataReceived entity if present
+  let dataReceivedEntity = null;
+  if (dbResult.dataReceivedId) {
+    const dataReceivedRow = db
+      .select()
+      .from(dataReceived)
+      .where(eq(dataReceived.id, dbResult.dataReceivedId))
+      .get();
+    
+    if (dataReceivedRow) {
+      dataReceivedEntity = dataReceivedMapper.toDomain(dataReceivedRow);
+    }
+  }
+  
   return {
     id: dbResult.id as RoleListingId,
-    companyId: dbResult.companyId as RoleCompanyId | null,
+    company: companyEntity,
     title: dbResult.title,
     description: dbResult.description,
     location: locationEntity,
     workArrangement: dbResult.workArrangement,
     capturedAt: dbResult.capturedAt,
-    dataReceivedId: dbResult.dataReceivedId as DataReceivedId | null,
+    dataReceived: dataReceivedEntity,
     status: dbResult.status,
     appliedAt: dbResult.appliedAt,
   };
@@ -43,13 +71,13 @@ export function toDomainMany(dbResults: typeof roleListing.$inferSelect[]): Role
 export function toPersistence(entity: RoleListing): typeof roleListing.$inferInsert {
   return {
     id: entity.id as string,
-    companyId: entity.companyId as string | null,
+    companyId: entity.company ? (entity.company.id as string) : null,
     title: entity.title,
     description: entity.description,
     location: entity.location ? (entity.location.id as string) : null,
     workArrangement: entity.workArrangement,
     capturedAt: entity.capturedAt,
-    dataReceivedId: entity.dataReceivedId as string | null,
+    dataReceivedId: entity.dataReceived ? (entity.dataReceived.id as string) : null,
     status: entity.status,
     appliedAt: entity.appliedAt,
   };

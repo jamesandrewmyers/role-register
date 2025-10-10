@@ -1,10 +1,10 @@
-import type { RoleListingId } from "./roleListing";
+import type { RoleListing } from "./roleListing";
 
 export type RoleEventId = string & { readonly brand: unique symbol };
 
 export interface RoleEvent {
   id: RoleEventId;
-  eventListingId: RoleListingId;
+  listing: RoleListing;
   eventType: string;
   eventTitle: string;
   eventDate: number | null;
