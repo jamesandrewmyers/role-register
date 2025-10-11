@@ -7,7 +7,7 @@ export default defineConfig({
   target: 'node18',
   clean: false,
   splitting: false,
-  sourcemap: false,
+  sourcemap: true,
   dts: false,
   external: ['better-sqlite3', 'drizzle-orm'],
   bundle: true,

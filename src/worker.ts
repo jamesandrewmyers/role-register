@@ -135,10 +135,10 @@ parentPort.on("message", async (eventId: string) => {
               const city = locationParts[0] || '';
               const stateStr = locationParts[1] || '';
               
-              if (city && stateStr) {
+              if (city && stateStr !== null) {
                 const state = roleStateService.getStateByAbbreviation(stateStr);
                 
-                if (state) {
+                if (state !== null) {
                   const existingLocation = roleLocationService.getLocationByCityAndState(city, state.id);
                   
                   if (existingLocation) {

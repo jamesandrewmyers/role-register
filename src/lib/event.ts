@@ -9,7 +9,9 @@ export const bus = new Emittery<{
 // Set up worker listener in the same context as the bus
 bus.on("event.created", ({ id }) => {
   console.log("[Event Bus] Starting worker for event:", id);
-  const worker = new Worker(path.resolve(process.cwd(), "src/worker.js"));
+  const worker = new Worker(path.resolve(process.cwd(), "src/worker.js"), {
+    execArgv: process.env.NODE_ENV === 'development' ? ['--inspect'] : []
+  });
   worker.postMessage(id);
 
   worker.on("message", (msg) => {
