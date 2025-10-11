@@ -10,3 +10,8 @@ export const db = drizzle(sqlite, { schema });
 
 // Export raw SQLite connection for direct queries
 export const rawDb = sqlite;
+
+export function runInTransaction<T>(fn: () => T): T {
+  const transaction = rawDb.transaction(fn);
+  return transaction();
+}

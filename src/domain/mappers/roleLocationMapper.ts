@@ -1,10 +1,10 @@
-import { db } from "@/lib/db";
+import { db as defaultDb } from "@/lib/db";
 import { roleLocation, roleState } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import type { RoleLocation, RoleLocationId } from "../entities/roleLocation";
 import * as roleStateMapper from "./roleStateMapper";
 
-export function toDomain(dbResult: typeof roleLocation.$inferSelect): RoleLocation {
+export function toDomain(dbResult: typeof roleLocation.$inferSelect, db = defaultDb): RoleLocation {
   // Fetch related state entity
   const stateRow = db
     .select()
@@ -18,14 +18,14 @@ export function toDomain(dbResult: typeof roleLocation.$inferSelect): RoleLocati
   
   return {
     id: dbResult.id as RoleLocationId,
-    state: roleStateMapper.toDomain(stateRow),
+    state: roleStateMapper.toDomain(stateRow, db),
     city: dbResult.city,
     createdAt: dbResult.createdAt,
   };
 }
 
-export function toDomainMany(dbResults: typeof roleLocation.$inferSelect[]): RoleLocation[] {
-  return dbResults.map(toDomain);
+export function toDomainMany(dbResults: typeof roleLocation.$inferSelect[], db = defaultDb): RoleLocation[] {
+  return dbResults.map(result => toDomain(result, db));
 }
 
 export function toPersistence(entity: RoleLocation): typeof roleLocation.$inferInsert {

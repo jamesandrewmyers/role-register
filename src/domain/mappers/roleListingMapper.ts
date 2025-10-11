@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db as defaultDb } from "@/lib/db";
 import { roleLocation, roleCompany, dataReceived } from "@/lib/schema";
 import type { roleListing } from "@/lib/schema";
 import type { RoleListing, RoleListingId } from "../entities/roleListing";
@@ -7,7 +7,7 @@ import * as roleLocationMapper from "./roleLocationMapper";
 import * as roleCompanyMapper from "./roleCompanyMapper";
 import * as dataReceivedMapper from "./dataReceivedMapper";
 
-export function toDomain(dbResult: typeof roleListing.$inferSelect): RoleListing {
+export function toDomain(dbResult: typeof roleListing.$inferSelect, db = defaultDb): RoleListing {
   // Fetch related company entity if present
   let companyEntity = null;
   if (dbResult.companyId) {
@@ -18,7 +18,7 @@ export function toDomain(dbResult: typeof roleListing.$inferSelect): RoleListing
       .get();
     
     if (companyRow) {
-      companyEntity = roleCompanyMapper.toDomain(companyRow);
+      companyEntity = roleCompanyMapper.toDomain(companyRow, db);
     }
   }
   
@@ -32,7 +32,7 @@ export function toDomain(dbResult: typeof roleListing.$inferSelect): RoleListing
       .get();
     
     if (locationRow) {
-      locationEntity = roleLocationMapper.toDomain(locationRow);
+      locationEntity = roleLocationMapper.toDomain(locationRow, db);
     }
   }
   
@@ -46,7 +46,7 @@ export function toDomain(dbResult: typeof roleListing.$inferSelect): RoleListing
       .get();
     
     if (dataReceivedRow) {
-      dataReceivedEntity = dataReceivedMapper.toDomain(dataReceivedRow);
+      dataReceivedEntity = dataReceivedMapper.toDomain(dataReceivedRow, db);
     }
   }
   
@@ -64,8 +64,8 @@ export function toDomain(dbResult: typeof roleListing.$inferSelect): RoleListing
   };
 }
 
-export function toDomainMany(dbResults: typeof roleListing.$inferSelect[]): RoleListing[] {
-  return dbResults.map(toDomain);
+export function toDomainMany(dbResults: typeof roleListing.$inferSelect[], db = defaultDb): RoleListing[] {
+  return dbResults.map(result => toDomain(result, db));
 }
 
 export function toPersistence(entity: RoleListing): typeof roleListing.$inferInsert {

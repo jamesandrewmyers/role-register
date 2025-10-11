@@ -1,7 +1,7 @@
 import type { eventInfo } from "@/lib/schema";
 import type { EventInfo, EventInfoId } from "../entities/eventInfo";
 
-export function toDomain(dbResult: typeof eventInfo.$inferSelect): EventInfo {
+export function toDomain(dbResult: typeof eventInfo.$inferSelect, db?: any): EventInfo {
   return {
     id: dbResult.id as EventInfoId,
     type: dbResult.type,
@@ -14,6 +14,6 @@ export function toDomain(dbResult: typeof eventInfo.$inferSelect): EventInfo {
   };
 }
 
-export function toDomainMany(dbResults: typeof eventInfo.$inferSelect[]): EventInfo[] {
-  return dbResults.map(toDomain);
+export function toDomainMany(dbResults: typeof eventInfo.$inferSelect[], db?: any): EventInfo[] {
+  return dbResults.map(result => toDomain(result, db));
 }

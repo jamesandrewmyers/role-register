@@ -1,7 +1,7 @@
 import type { roleState } from "@/lib/schema";
 import type { RoleState, RoleStateId } from "../entities/roleState";
 
-export function toDomain(dbResult: typeof roleState.$inferSelect): RoleState {
+export function toDomain(dbResult: typeof roleState.$inferSelect, db?: any): RoleState {
   return {
     id: dbResult.id as RoleStateId,
     name: dbResult.name,
@@ -10,6 +10,6 @@ export function toDomain(dbResult: typeof roleState.$inferSelect): RoleState {
   };
 }
 
-export function toDomainMany(dbResults: typeof roleState.$inferSelect[]): RoleState[] {
-  return dbResults.map(toDomain);
+export function toDomainMany(dbResults: typeof roleState.$inferSelect[], db?: any): RoleState[] {
+  return dbResults.map(result => toDomain(result, db));
 }

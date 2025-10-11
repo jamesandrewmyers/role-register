@@ -1,11 +1,11 @@
-import { db } from "@/lib/db";
+import { db as defaultDb } from "@/lib/db";
 import { roleListing } from "@/lib/schema";
 import type { roleCallout } from "@/lib/schema";
 import type { RoleCallout, RoleCalloutId } from "../entities/roleCallout";
 import { eq } from "drizzle-orm";
 import * as roleListingMapper from "./roleListingMapper";
 
-export function toDomain(dbResult: typeof roleCallout.$inferSelect): RoleCallout {
+export function toDomain(dbResult: typeof roleCallout.$inferSelect, db = defaultDb): RoleCallout {
   const listingRow = db
     .select()
     .from(roleListing)
@@ -18,13 +18,13 @@ export function toDomain(dbResult: typeof roleCallout.$inferSelect): RoleCallout
   
   return {
     id: dbResult.id as RoleCalloutId,
-    listing: roleListingMapper.toDomain(listingRow),
+    listing: roleListingMapper.toDomain(listingRow, db),
     content: dbResult.content,
   };
 }
 
-export function toDomainMany(dbResults: typeof roleCallout.$inferSelect[]): RoleCallout[] {
-  return dbResults.map(toDomain);
+export function toDomainMany(dbResults: typeof roleCallout.$inferSelect[], db = defaultDb): RoleCallout[] {
+  return dbResults.map(result => toDomain(result, db));
 }
 
 export function toPersistence(entity: RoleCallout): typeof roleCallout.$inferInsert {

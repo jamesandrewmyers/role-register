@@ -1,11 +1,11 @@
-import { db } from "@/lib/db";
+import { db as defaultDb } from "@/lib/db";
 import { roleListing } from "@/lib/schema";
 import type { roleEvent } from "@/lib/schema";
 import type { RoleEvent, RoleEventId } from "../entities/roleEvent";
 import { eq } from "drizzle-orm";
 import * as roleListingMapper from "./roleListingMapper";
 
-export function toDomain(dbResult: typeof roleEvent.$inferSelect): RoleEvent {
+export function toDomain(dbResult: typeof roleEvent.$inferSelect, db = defaultDb): RoleEvent {
   // Fetch related listing entity
   const listingRow = db
     .select()
@@ -19,7 +19,7 @@ export function toDomain(dbResult: typeof roleEvent.$inferSelect): RoleEvent {
   
   return {
     id: dbResult.id as RoleEventId,
-    listing: roleListingMapper.toDomain(listingRow),
+    listing: roleListingMapper.toDomain(listingRow, db),
     eventType: dbResult.eventType,
     eventTitle: dbResult.eventTitle,
     eventDate: dbResult.eventDate,
@@ -27,8 +27,8 @@ export function toDomain(dbResult: typeof roleEvent.$inferSelect): RoleEvent {
   };
 }
 
-export function toDomainMany(dbResults: typeof roleEvent.$inferSelect[]): RoleEvent[] {
-  return dbResults.map(toDomain);
+export function toDomainMany(dbResults: typeof roleEvent.$inferSelect[], db = defaultDb): RoleEvent[] {
+  return dbResults.map(result => toDomain(result, db));
 }
 
 export function toPersistence(entity: RoleEvent): typeof roleEvent.$inferInsert {

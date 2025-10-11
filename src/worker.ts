@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import * as cheerio from "cheerio";
 import { extractRequirements } from "@/lib/requirementExtractor";
 import { parseLinkedInJob } from "@/lib/linkedIn";
+import { runInTransaction } from "@/lib/db";
 import * as eventInfoService from "@/services/eventInfoService";
 import * as dataReceivedService from "@/services/dataReceivedService";
 import * as roleCompanyService from "@/services/roleCompanyService";
@@ -114,6 +115,8 @@ parentPort.on("message", async (eventId: string) => {
           }
           
           if (jobTitle && companyName && jobDescription) {
+            // Wrap all database writes in a transaction for atomicity
+            runInTransaction(() => {
             let companyId = roleCompanyService.getCompanyByName(companyName)?.id;
             
             if (!companyId) {
@@ -215,6 +218,7 @@ parentPort.on("message", async (eventId: string) => {
               
               parsingLog += `[Database] Created ${requirements.length} requirements and ${niceToHaves.length} nice-to-haves\n`;
             }
+            });
           }
         }
       } else {
