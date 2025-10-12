@@ -37,9 +37,6 @@ parentPort.on("message", async (eventId: string) => {
   }
 
   try {
-    // Mark as processing
-    eventInfoService.updateEventStatus(eventId as EventInfoId, "processing");
-
     // 🧑‍💻 Do work based on event type
     if (job.type === "processHtml") {
       const payload = JSON.parse(job.payload);
@@ -56,6 +53,11 @@ parentPort.on("message", async (eventId: string) => {
       const $ = cheerio.load(dataRecord.html);
       
       let parsingLog = `[Parser] Processing ${dataRecord.url}\n`;
+
+      // Wrap ALL operations (including status updates) in single transaction
+      runInTransaction(() => {
+        // Mark as processing
+        eventInfoService.updateEventStatus(eventId as EventInfoId, "processing");
 
       if (url.hostname === "www.linkedin.com") {
         parsingLog += "[LinkedIn Parser] Parsing job posting...\n";
@@ -115,8 +117,6 @@ parentPort.on("message", async (eventId: string) => {
           }
           
           if (jobTitle && companyName && jobDescription) {
-            // Wrap all database writes in a transaction for atomicity
-            runInTransaction(() => {
             let companyId = roleCompanyService.getCompanyByName(companyName)?.id;
             
             if (!companyId) {
@@ -218,25 +218,25 @@ parentPort.on("message", async (eventId: string) => {
               
               parsingLog += `[Database] Created ${requirements.length} requirements and ${niceToHaves.length} nice-to-haves\n`;
             }
-            });
           }
         }
       } else {
         parsingLog += `[Parser] No parser configured for hostname: ${url.hostname}\n`;
       }
 
-      // Store parsing log in processing notes for reliable verification
-      dataReceivedService.updateDataReceived(payload.dataReceivedId as DataReceivedId, {
-        processingNotes: parsingLog,
-        processed: "true",
+        // Store parsing log in processing notes for reliable verification
+        dataReceivedService.updateDataReceived(payload.dataReceivedId as DataReceivedId, {
+          processingNotes: parsingLog,
+          processed: "true",
+        });
+
+        // Mark as done - inside transaction for atomicity
+        eventInfoService.updateEventStatus(eventId as EventInfoId, "done");
       });
 
-      // Also log to console (may be buffered/unreliable)
+      // Log to console (outside transaction - informational only)
       console.log(parsingLog);
     }
-
-    // Mark as done
-    eventInfoService.updateEventStatus(eventId as EventInfoId, "done");
 
     parentPort?.postMessage({ eventId, status: "done" });
   } catch (err: unknown) {
