@@ -236,6 +236,13 @@ assistant-*
 *.db
 *.sqlite
 *.sqlite3
+# SQLite WAL (Write-Ahead Logging) files
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3-shm
+*.sqlite3-wal
+*.db-shm
+*.db-wal
 
 # Backup files
 *.backup

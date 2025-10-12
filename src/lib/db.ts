@@ -90,7 +90,30 @@ export function reconnectDatabase(newDbPath: string): void {
   console.log(`✅ Database reconnected to: ${absolutePath}`);
 }
 
+let backupInProgress = false;
+const writeQueue: Array<() => void> = [];
+
+export function isBackupInProgress(): boolean {
+  return backupInProgress;
+}
+
+export function pauseWrites(): void {
+  backupInProgress = true;
+}
+
+export function resumeWrites(): void {
+  backupInProgress = false;
+  while (writeQueue.length > 0) {
+    const fn = writeQueue.shift();
+    if (fn) fn();
+  }
+}
+
 export function runInTransaction<T>(fn: () => T): T {
+  if (backupInProgress) {
+    throw new Error('Database backup in progress - writes are paused');
+  }
+  
   try {
     const transaction = rawDb.transaction(fn);
     return transaction();
@@ -99,5 +122,18 @@ export function runInTransaction<T>(fn: () => T): T {
       throw new Error('Database connection error - database may have been moved or is readonly');
     }
     throw err;
+  }
+}
+
+export async function performBackup(backupPath: string): Promise<void> {
+  try {
+    pauseWrites();
+    await rawDb.backup(backupPath);
+    console.log('Backup completed successfully');
+  } catch (err) {
+    console.error('Backup failed:', err);
+    throw err;
+  } finally {
+    resumeWrites();
   }
 }
