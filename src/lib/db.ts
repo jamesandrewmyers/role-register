@@ -137,3 +137,73 @@ export async function performBackup(backupPath: string): Promise<void> {
     resumeWrites();
   }
 }
+
+export interface BackupInfo {
+  fileName: string;
+  fullPath: string;
+  timestamp: Date;
+  displayName: string;
+}
+
+export function listBackups(): BackupInfo[] {
+  const dbDir = path.dirname(currentDbPath);
+  const dbFileName = path.basename(currentDbPath, '.sqlite');
+  
+  if (!fs.existsSync(dbDir)) {
+    return [];
+  }
+  
+  const files = fs.readdirSync(dbDir);
+  const backupFiles = files
+    .filter(file => file.match(/_backup_(\d{4})\-(\d{2})\-(\d{2})T(\d{2})\-(\d{2})\-(\d{2}).*\.sqlite$/))
+    .map(fileName => {
+      const fullPath = path.join(dbDir, fileName);
+      const tsm = fileName.match(/_backup_(\d{4})\-(\d{2})\-(\d{2})T(\d{2})\-(\d{2})\-(\d{2}).*\.sqlite$/);
+      
+      if (tsm) {
+        let timestamp = new Date(`${tsm[1]}-${tsm[2]}-${tsm[3]}T${tsm[4]}:${tsm[5]}:${tsm[6]}.000Z`);
+        const displayName = timestamp.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+        
+        return {
+          fileName,
+          fullPath,
+          timestamp,
+          displayName
+        };
+      }
+      return {} as BackupInfo;
+ 
+    })
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  
+  return backupFiles;
+}
+
+export async function restoreFromBackup(backupPath: string): Promise<void> {
+  try {
+    pauseWrites();
+    
+    if (!fs.existsSync(backupPath)) {
+      throw new Error(`Backup file not found: ${backupPath}`);
+    }
+    
+    const backupDb = new Database(backupPath);
+    await backupDb.backup(currentDbPath);
+    backupDb.close();
+    
+    console.log('Restore completed successfully');
+  } catch (err) {
+    console.error('Restore failed:', err);
+    throw err;
+  } finally {
+    resumeWrites();
+  }
+}

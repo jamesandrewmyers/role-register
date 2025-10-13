@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import TableViewer from "./TableViewer";
+import RestoreBackupModal from "./RestoreBackupModal";
 
 interface AdminDialogProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
   const [activeTab, setActiveTab] = useState<TabType>("settings");
   const [reprocessing, setReprocessing] = useState(false);
   const [backingUp, setBackingUp] = useState(false);
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
   const [storageLocation, setStorageLocation] = useState<string>("");
 
   useEffect(() => {
@@ -137,6 +139,10 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
     } finally {
       setBackingUp(false);
     }
+  };
+
+  const handleRestoreComplete = () => {
+    window.location.reload();
   };
 
   if (!isOpen) return null;
@@ -277,6 +283,32 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
                   <p className="text-gray-400 text-sm">Creates a timestamped backup of the database using SQLite backup API</p>
                 </div>
               </div>
+
+              <div className="flex items-center gap-4 bg-white/5 rounded-lg p-4 border border-white/10">
+                <button
+                  onClick={() => setRestoreModalOpen(true)}
+                  className="p-3 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg border border-purple-400/30 transition-colors"
+                  title="Restore from backup"
+                >
+                  <svg
+                    className="w-6 h-6 text-purple-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                    />
+                  </svg>
+                </button>
+                <div className="flex-1">
+                  <h3 className="text-white font-semibold mb-1">Restore from backup</h3>
+                  <p className="text-gray-400 text-sm">Restore the database from a previous backup</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -294,6 +326,12 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
             </>
           )}
         </div>
+
+        <RestoreBackupModal
+          isOpen={restoreModalOpen}
+          onClose={() => setRestoreModalOpen(false)}
+          onRestore={handleRestoreComplete}
+        />
       </div>
     </div>
   );
