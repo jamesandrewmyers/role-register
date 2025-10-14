@@ -91,6 +91,7 @@ export function reconnectDatabase(newDbPath: string): void {
 }
 
 let backupInProgress = false;
+let startupBackupComplete = false;
 const writeQueue: Array<() => void> = [];
 
 export function isBackupInProgress(): boolean {
@@ -109,7 +110,7 @@ export function resumeWrites(): void {
   }
 }
 
-export function runInTransaction<T>(fn: () => T): T {
+function runInTransactionInternal<T>(fn: () => T): T {
   if (backupInProgress) {
     throw new Error('Database backup in progress - writes are paused');
   }
@@ -123,6 +124,13 @@ export function runInTransaction<T>(fn: () => T): T {
     }
     throw err;
   }
+}
+
+export function runInTransaction<T>(fn: () => T): T {
+  if (!startupBackupComplete) {
+    throw new Error('Database is initializing - startup backup in progress. Please wait.');
+  }
+  return runInTransactionInternal(fn);
 }
 
 export async function performBackup(backupPath: string): Promise<void> {
@@ -187,6 +195,47 @@ export function listBackups(): BackupInfo[] {
   return backupFiles;
 }
 
+export function getMostRecentBackup(): BackupInfo | null {
+  const backups = listBackups();
+  return backups.length > 0 ? backups[0] : null;
+}
+
+function filesAreDifferent(file1: string, file2: string): boolean {
+  if (!fs.existsSync(file1) || !fs.existsSync(file2)) {
+    return true;
+  }
+  
+  const stats1 = fs.statSync(file1);
+  const stats2 = fs.statSync(file2);
+  
+  if (stats1.size !== stats2.size) {
+    return true;
+  }
+  
+  if (Math.abs(stats1.mtimeMs - stats2.mtimeMs) < 1000) {
+    return false;
+  }
+  
+  return true;
+}
+
+export function databaseNeedsBackup(): boolean {
+  const mostRecent = getMostRecentBackup();
+  
+  if (!mostRecent) {
+    console.log('[Startup Backup] No existing backups found, backup needed');
+    return true;
+  }
+  
+  if (filesAreDifferent(currentDbPath, mostRecent.fullPath)) {
+    console.log('[Startup Backup] Database differs from most recent backup, backup needed');
+    return true;
+  }
+  
+  console.log('[Startup Backup] Database matches most recent backup, no backup needed');
+  return false;
+}
+
 export async function restoreFromBackup(backupPath: string): Promise<void> {
   try {
     pauseWrites();
@@ -207,3 +256,29 @@ export async function restoreFromBackup(backupPath: string): Promise<void> {
     resumeWrites();
   }
 }
+
+// Perform startup backup check - blocks writes until complete
+(async () => {
+  try {
+    if (databaseNeedsBackup()) {
+      console.log('[Startup Backup] Creating automatic backup...');
+      pauseWrites();
+      
+      const dbDir = path.dirname(currentDbPath);
+      const dbFileName = path.basename(currentDbPath, '.sqlite');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const backupFileName = `${dbFileName}_backup_${timestamp}.sqlite`;
+      const backupPath = path.join(dbDir, backupFileName);
+      
+      await rawDb.backup(backupPath);
+      console.log('[Startup Backup] Automatic backup created successfully');
+      
+      resumeWrites();
+    }
+  } catch (err) {
+    console.error('[Startup Backup] Failed to create automatic backup:', err);
+    resumeWrites();
+  } finally {
+    startupBackupComplete = true;
+  }
+})();
