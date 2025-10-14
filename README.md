@@ -19,9 +19,23 @@ RoleRegister is a **local-first job application tracking system** built with Nex
 - **Company & Location Data**: Automatic extraction and normalization of company names and locations
 
 ### Data Management
-- **Admin Interface**: View and manage raw data, events, and processing queue
-- **Reprocessing**: Re-run extraction on captured job postings
-- **Bulk Operations**: Reprocess all captured data with confirmation dialog
+- **Admin Interface**: 
+  - **Settings Tab**: Configure application settings (storage location)
+  - **Actions Tab**: 
+    - Reprocess all imported listing data
+    - Manual database backup
+    - Restore from backup
+  - **Database Tab**: View and manage raw data in all tables
+- **Reprocessing**: Re-run extraction on captured job postings (single or bulk)
+- **HTML Viewer**: Collapsible tree view of captured HTML with syntax highlighting and search
+- **Database Backup & Restore**:
+  - Automatic startup backup (creates backup if database changed since last backup)
+  - Periodic automatic backups (configurable interval, default 15 minutes)
+  - Manual backup with timestamp
+  - Restore from backup with dropdown selection showing all backups
+  - Uses SQLite backup API for safe, consistent backups
+  - WAL checkpointing before backup ensures complete data capture
+  - Worker threads automatically coordinated during restore operations
 
 ### Developer Features
 - **Comprehensive Test Suite**: 134 BDD-style unit tests with Vitest and React Testing Library
@@ -81,6 +95,29 @@ The application will be available at `http://localhost:3000`
 4. Select the `chrome-extension` directory from this project
 5. Navigate to a LinkedIn job posting
 6. Click the extension icon to capture the job data
+
+### Backup Configuration (Optional)
+
+By default, RoleRegister automatically backs up your database:
+- On startup (if changes detected since last backup)
+- Every 15 minutes (if changes detected)
+
+To customize the backup interval:
+
+1. Insert a setting into the database:
+```sql
+INSERT INTO settings (id, name, value, updatedAt) 
+VALUES (
+  lower(hex(randomblob(16))), 
+  'backup_interval_minutes', 
+  '30',  -- Change to desired minutes
+  strftime('%s', 'now')
+);
+```
+
+2. Restart the application
+
+Backups are stored in the `data/` directory with timestamps (e.g., `role_register_backup_2025-01-15T14-30-00.sqlite`).
 
 ---
 
@@ -171,7 +208,7 @@ RoleRegister follows Domain-Driven Design (DDD) principles with clear separation
 - `role_qualifications`: Extracted requirements (required and nice-to-have)
 - `role_listing_event`: Application timeline events
 - `event_info`: Background processing queue
-- `settings`: Application configuration
+- `settings`: Application configuration (includes `backup_interval_minutes`)
 
 **Type Safety:**
 All entities use branded types (e.g., `RoleListingId`, `RoleCompanyId`) to prevent ID mixing at compile time.
@@ -184,8 +221,10 @@ All entities use branded types (e.g., `RoleListingId`, `RoleCompanyId`) to preve
 
 - No remote accounts required
 - No data transmission to external services
-- SQLite database stored in project directory
+- SQLite database stored in `data/` directory
+- Automatic backups stored in `data/` directory with timestamps
 - Chrome extension only communicates with `localhost:3000`
+- WAL mode enabled for crash protection and safe concurrent access
 
 ---
 
@@ -199,13 +238,19 @@ All entities use branded types (e.g., `RoleListingId`, `RoleCompanyId`) to preve
 ✅ Event tracking and status management  
 ✅ Admin data management interface  
 ✅ Comprehensive test coverage  
+✅ Automatic database backup system  
+✅ Manual backup and restore functionality  
+✅ Configurable backup intervals  
+✅ WAL mode for crash protection and concurrent access  
 
 ### Planned
 - [ ] Metrics dashboard (application stats, conversion rates)
 - [ ] Support for additional job sites (Indeed, etc.)
 - [ ] Custom status definitions
-- [ ] Export functionality
-- [ ] Search and filtering
+- [ ] Export functionality (CSV, JSON)
+- [ ] Search and filtering enhancements
+- [ ] Backup retention policies
+- [ ] Backup encryption options
 
 ---
 
