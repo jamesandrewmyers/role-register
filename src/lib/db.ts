@@ -90,31 +90,7 @@ export function reconnectDatabase(newDbPath: string): void {
   console.log(`✅ Database reconnected to: ${absolutePath}`);
 }
 
-let backupInProgress = false;
-let startupBackupComplete = false;
-const writeQueue: Array<() => void> = [];
-
-export function isBackupInProgress(): boolean {
-  return backupInProgress;
-}
-
-export function pauseWrites(): void {
-  backupInProgress = true;
-}
-
-export function resumeWrites(): void {
-  backupInProgress = false;
-  while (writeQueue.length > 0) {
-    const fn = writeQueue.shift();
-    if (fn) fn();
-  }
-}
-
-function runInTransactionInternal<T>(fn: () => T): T {
-  if (backupInProgress) {
-    throw new Error('Database backup in progress - writes are paused');
-  }
-  
+export function runInTransaction<T>(fn: () => T): T {
   try {
     const transaction = rawDb.transaction(fn);
     return transaction();
@@ -126,27 +102,17 @@ function runInTransactionInternal<T>(fn: () => T): T {
   }
 }
 
-export function runInTransaction<T>(fn: () => T): T {
-  if (!startupBackupComplete) {
-    throw new Error('Database is initializing - startup backup in progress. Please wait.');
-  }
-  return runInTransactionInternal(fn);
-}
-
 export async function performBackup(backupPath: string): Promise<void> {
   try {
-    pauseWrites();
-    
     // Checkpoint WAL to ensure all changes are in the main database file
     rawDb.pragma('wal_checkpoint(FULL)');
     
+    // SQLite backup API handles locking and coordination internally
     await rawDb.backup(backupPath);
     console.log('Backup completed successfully');
   } catch (err) {
     console.error('Backup failed:', err);
     throw err;
-  } finally {
-    resumeWrites();
   }
 }
 
@@ -174,15 +140,7 @@ export function listBackups(): BackupInfo[] {
       
       if (tsm) {
         let timestamp = new Date(`${tsm[1]}-${tsm[2]}-${tsm[3]}T${tsm[4]}:${tsm[5]}:${tsm[6]}.000Z`);
-        const displayName = timestamp.toLocaleString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false
-        });
+        const displayName = timestamp.toISOString();
         
         return {
           fileName,
@@ -204,25 +162,6 @@ export function getMostRecentBackup(): BackupInfo | null {
   return backups.length > 0 ? backups[0] : null;
 }
 
-function filesAreDifferent(file1: string, file2: string): boolean {
-  if (!fs.existsSync(file1) || !fs.existsSync(file2)) {
-    return true;
-  }
-  
-  const stats1 = fs.statSync(file1);
-  const stats2 = fs.statSync(file2);
-  
-  if (stats1.size !== stats2.size) {
-    return true;
-  }
-  
-  if (Math.abs(stats1.mtimeMs - stats2.mtimeMs) < 1000) {
-    return false;
-  }
-  
-  return true;
-}
-
 export function databaseNeedsBackup(): boolean {
   const mostRecent = getMostRecentBackup();
   
@@ -231,23 +170,40 @@ export function databaseNeedsBackup(): boolean {
     return true;
   }
   
-  if (filesAreDifferent(currentDbPath, mostRecent.fullPath)) {
-    console.log('[Startup Backup] Database differs from most recent backup, backup needed');
+  // Check if database was modified after the backup was created
+  if (!fs.existsSync(currentDbPath)) {
+    console.log('[Startup Backup] Database file not found, backup needed');
     return true;
   }
   
-  console.log('[Startup Backup] Database matches most recent backup, no backup needed');
+  const dbStats = fs.statSync(currentDbPath);
+  const dbModifiedMs = dbStats.mtimeMs;
+  const walStats = fs.statSync(currentDbPath + '-wal');
+  const walModifiedMs = walStats.mtimeMs;
+  const backupStats = fs.statSync(mostRecent.fullPath);
+  const backupModifiedMs = backupStats.mtimeMs;
+  
+  if (dbModifiedMs > backupModifiedMs
+  || walModifiedMs > backupModifiedMs) {
+    console.log('[Startup Backup] Database modified after most recent backup, backup needed');
+    console.log(`  DB mtime: ${new Date(dbModifiedMs).toISOString()}`);
+    console.log(`  WAL mtime: ${new Date(walModifiedMs).toISOString()}`);
+    console.log(`  Backup mtime: ${new Date(backupModifiedMs).toISOString()}`);
+    return true;
+  }
+  
+  console.log('[Startup Backup] Database not modified since most recent backup, no backup needed');
   return false;
 }
 
 export async function restoreFromBackup(backupPath: string): Promise<void> {
   try {
-    pauseWrites();
-    
     if (!fs.existsSync(backupPath)) {
       throw new Error(`Backup file not found: ${backupPath}`);
     }
     
+    // Workers should be terminated before calling this function
+    // SQLite backup API handles locking and coordination internally
     const backupDb = new Database(backupPath);
     await backupDb.backup(currentDbPath);
     backupDb.close();
@@ -256,8 +212,6 @@ export async function restoreFromBackup(backupPath: string): Promise<void> {
   } catch (err) {
     console.error('Restore failed:', err);
     throw err;
-  } finally {
-    resumeWrites();
   }
 }
 
@@ -278,19 +232,12 @@ export async function performStartupBackup(): Promise<void> {
     }
   } catch (err) {
     console.error('[Startup Backup] Failed to create automatic backup:', err);
-  } finally {
-    startupBackupComplete = true;
   }
 }
 
 // Export function to perform periodic backup check
 export async function performPeriodicBackupCheck(): Promise<void> {
   try {
-    if (!startupBackupComplete) {
-      console.log('[Periodic Backup] Skipping check - startup not complete');
-      return;
-    }
-
     if (databaseNeedsBackup()) {
       console.log('[Periodic Backup] Creating automatic backup...');
       
