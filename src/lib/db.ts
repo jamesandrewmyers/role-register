@@ -282,3 +282,28 @@ export async function performStartupBackup(): Promise<void> {
     startupBackupComplete = true;
   }
 }
+
+// Export function to perform periodic backup check
+export async function performPeriodicBackupCheck(): Promise<void> {
+  try {
+    if (!startupBackupComplete) {
+      console.log('[Periodic Backup] Skipping check - startup not complete');
+      return;
+    }
+
+    if (databaseNeedsBackup()) {
+      console.log('[Periodic Backup] Creating automatic backup...');
+      
+      const dbDir = path.dirname(currentDbPath);
+      const dbFileName = path.basename(currentDbPath, '.sqlite');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const backupFileName = `${dbFileName}_backup_${timestamp}.sqlite`;
+      const backupPath = path.join(dbDir, backupFileName);
+      
+      await performBackup(backupPath);
+      console.log('[Periodic Backup] Automatic backup created successfully');
+    }
+  } catch (err) {
+    console.error('[Periodic Backup] Failed to create automatic backup:', err);
+  }
+}
