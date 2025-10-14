@@ -1,6 +1,7 @@
 import Emittery from "emittery";
 import { Worker } from "worker_threads";
 import path from "path";
+import "./startup";
 
 export const bus = new Emittery<{
   "event.created": { id: string };

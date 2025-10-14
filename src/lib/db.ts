@@ -136,6 +136,10 @@ export function runInTransaction<T>(fn: () => T): T {
 export async function performBackup(backupPath: string): Promise<void> {
   try {
     pauseWrites();
+    
+    // Checkpoint WAL to ensure all changes are in the main database file
+    rawDb.pragma('wal_checkpoint(FULL)');
+    
     await rawDb.backup(backupPath);
     console.log('Backup completed successfully');
   } catch (err) {
@@ -257,12 +261,11 @@ export async function restoreFromBackup(backupPath: string): Promise<void> {
   }
 }
 
-// Perform startup backup check - blocks writes until complete
-(async () => {
+// Export function to perform startup backup - should only be called from main process
+export async function performStartupBackup(): Promise<void> {
   try {
     if (databaseNeedsBackup()) {
       console.log('[Startup Backup] Creating automatic backup...');
-      pauseWrites();
       
       const dbDir = path.dirname(currentDbPath);
       const dbFileName = path.basename(currentDbPath, '.sqlite');
@@ -270,15 +273,12 @@ export async function restoreFromBackup(backupPath: string): Promise<void> {
       const backupFileName = `${dbFileName}_backup_${timestamp}.sqlite`;
       const backupPath = path.join(dbDir, backupFileName);
       
-      await rawDb.backup(backupPath);
+      await performBackup(backupPath);
       console.log('[Startup Backup] Automatic backup created successfully');
-      
-      resumeWrites();
     }
   } catch (err) {
     console.error('[Startup Backup] Failed to create automatic backup:', err);
-    resumeWrites();
   } finally {
     startupBackupComplete = true;
   }
-})();
+}
