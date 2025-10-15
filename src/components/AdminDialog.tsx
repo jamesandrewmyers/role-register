@@ -3,13 +3,20 @@
 import { useEffect, useState } from "react";
 import TableViewer from "./TableViewer";
 import RestoreBackupModal from "./RestoreBackupModal";
+import DataReceivedList from "./DataReceivedList";
+import EventInfoList from "./EventInfoList";
+import DataReceivedDetails from "./DataReceivedDetails";
+import EventInfoDetails from "./EventInfoDetails";
+import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
+import type { EventInfoDTO } from "@/dto/eventInfo.dto";
 
 interface AdminDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type TabType = "settings" | "actions" | "database";
+type TabType = "settings" | "actions" | "database" | "monitoring";
+type MonitoringTabType = "dataReceived" | "eventInfo";
 
 export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
   const [tables, setTables] = useState<string[]>([]);
@@ -19,6 +26,11 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
   const [backingUp, setBackingUp] = useState(false);
   const [restoreModalOpen, setRestoreModalOpen] = useState(false);
   const [storageLocation, setStorageLocation] = useState<string>("");
+  const [monitoringTab, setMonitoringTab] = useState<MonitoringTabType>("dataReceived");
+  const [dataReceived, setDataReceived] = useState<DataReceivedDTO[]>([]);
+  const [eventInfo, setEventInfo] = useState<EventInfoDTO[]>([]);
+  const [selectedDataReceived, setSelectedDataReceived] = useState<DataReceivedDTO | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventInfoDTO | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -47,8 +59,20 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
       }
     }
 
+    async function fetchDashboard() {
+      try {
+        const res = await fetch("/api/dashboard");
+        const data = await res.json();
+        setDataReceived(data.dataReceived || []);
+        setEventInfo(data.eventInfo || []);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      }
+    }
+
     fetchTables();
     fetchSettings();
+    fetchDashboard();
   }, [isOpen]);
 
   const handleFolderSelect = async () => {
@@ -198,6 +222,16 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
             >
               Database
             </button>
+            <button
+              onClick={() => setActiveTab("monitoring")}
+              className={`px-6 py-3 font-semibold transition-colors ${
+                activeTab === "monitoring"
+                  ? "text-white border-b-2 border-purple-400"
+                  : "text-purple-300 hover:text-white"
+              }`}
+            >
+              Monitoring
+            </button>
           </div>
         </div>
 
@@ -324,6 +358,64 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
                 </div>
               )}
             </>
+          )}
+
+          {activeTab === "monitoring" && (
+            <div className="space-y-4">
+              <div className="border-b border-purple-400/30">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setMonitoringTab("dataReceived")}
+                    className={`px-4 py-2 font-semibold transition-colors ${
+                      monitoringTab === "dataReceived"
+                        ? "text-white border-b-2 border-purple-400"
+                        : "text-purple-300 hover:text-white"
+                    }`}
+                  >
+                    Data Received
+                  </button>
+                  <button
+                    onClick={() => setMonitoringTab("eventInfo")}
+                    className={`px-4 py-2 font-semibold transition-colors ${
+                      monitoringTab === "eventInfo"
+                        ? "text-white border-b-2 border-purple-400"
+                        : "text-purple-300 hover:text-white"
+                    }`}
+                  >
+                    Event Info
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                {monitoringTab === "dataReceived" && (
+                  selectedDataReceived ? (
+                    <DataReceivedDetails
+                      item={selectedDataReceived}
+                      onClose={() => setSelectedDataReceived(null)}
+                    />
+                  ) : (
+                    <DataReceivedList
+                      items={dataReceived}
+                      onSelectItem={setSelectedDataReceived}
+                    />
+                  )
+                )}
+                {monitoringTab === "eventInfo" && (
+                  selectedEvent ? (
+                    <EventInfoDetails
+                      event={selectedEvent}
+                      onClose={() => setSelectedEvent(null)}
+                    />
+                  ) : (
+                    <EventInfoList
+                      events={eventInfo}
+                      onSelectEvent={setSelectedEvent}
+                    />
+                  )
+                )}
+              </div>
+            </div>
           )}
         </div>
 

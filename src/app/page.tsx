@@ -3,31 +3,18 @@
 import { useEffect, useState } from "react";
 import AdminDialog from "@/components/AdminDialog";
 import RoleListingMainView from "@/components/RoleListingMainView";
-import DataReceivedDetails from "@/components/DataReceivedDetails";
-import EventInfoDetails from "@/components/EventInfoDetails";
 import RoleListingSearch from "@/components/RoleListingSearch";
-import DataReceivedList from "@/components/DataReceivedList";
-import EventInfoList from "@/components/EventInfoList";
 import type { EnrichedRoleListingDTO } from "@/dto/enrichedRoleListing.dto";
-import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
-import type { EventInfoDTO } from "@/dto/eventInfo.dto";
 
 interface DashboardData {
-  dataReceived: DataReceivedDTO[];
-  eventInfo: EventInfoDTO[];
   roleListings: EnrichedRoleListingDTO[];
 }
-
-type ViewType = "roleListings" | "dataReceived" | "eventInfo";
 
 export default function Page() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedView, setSelectedView] = useState<ViewType>("roleListings");
   const [showAdmin, setShowAdmin] = useState(false);
   const [selectedListing, setSelectedListing] = useState<EnrichedRoleListingDTO | null>(null);
-  const [selectedDataReceived, setSelectedDataReceived] = useState<DataReceivedDTO | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<EventInfoDTO | null>(null);
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -57,34 +44,6 @@ export default function Page() {
     );
   }
 
-  const renderContent = () => {
-    switch (selectedView) {
-      case "roleListings":
-        return (
-          <RoleListingSearch 
-            listings={data?.roleListings || []} 
-            onSelectListing={setSelectedListing}
-          />
-        );
-
-      case "dataReceived":
-        return (
-          <DataReceivedList 
-            items={data?.dataReceived || []} 
-            onSelectItem={setSelectedDataReceived}
-          />
-        );
-
-      case "eventInfo":
-        return (
-          <EventInfoList 
-            events={data?.eventInfo || []} 
-            onSelectEvent={setSelectedEvent}
-          />
-        );
-    }
-  };
-
   if (selectedListing) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -104,14 +63,13 @@ export default function Page() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <header className="text-center mb-12 relative">
-          <h1 className="text-5xl font-bold text-white mb-2">Role Register</h1>
-          <p className="text-purple-300 text-lg">Job Application Tracking Dashboard</p>
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="h-screen flex flex-col">
+        <header className="p-6 relative">
+          <h1 className="text-4xl font-bold text-white text-center">Role Register</h1>
           <button
             onClick={() => setShowAdmin(true)}
-            className="absolute top-0 right-0 p-3 bg-white/10 hover:bg-white/20 rounded-full border border-white/20 transition-all group"
+            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full border border-white/20 transition-all group"
             aria-label="Admin settings"
           >
             <svg
@@ -136,49 +94,14 @@ export default function Page() {
           </button>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <button
-            onClick={() => setSelectedView("roleListings")}
-            className={`rounded-2xl p-6 border transition-all ${
-              selectedView === "roleListings"
-                ? "bg-purple-500/30 border-purple-400/50 backdrop-blur-lg shadow-lg shadow-purple-500/20"
-                : "bg-white/10 border-white/20 backdrop-blur-lg hover:bg-white/15"
-            }`}
-          >
-            <div className="text-purple-300 text-sm font-semibold mb-2">Role Listings</div>
-            <div className="text-4xl font-bold text-white">{data?.roleListings.length || 0}</div>
-          </button>
-          <button
-            onClick={() => setSelectedView("dataReceived")}
-            className={`rounded-2xl p-6 border transition-all ${
-              selectedView === "dataReceived"
-                ? "bg-purple-500/30 border-purple-400/50 backdrop-blur-lg shadow-lg shadow-purple-500/20"
-                : "bg-white/10 border-white/20 backdrop-blur-lg hover:bg-white/15"
-            }`}
-          >
-            <div className="text-purple-300 text-sm font-semibold mb-2">Data Received</div>
-            <div className="text-4xl font-bold text-white">{data?.dataReceived.length || 0}</div>
-          </button>
-          <button
-            onClick={() => setSelectedView("eventInfo")}
-            className={`rounded-2xl p-6 border transition-all ${
-              selectedView === "eventInfo"
-                ? "bg-purple-500/30 border-purple-400/50 backdrop-blur-lg shadow-lg shadow-purple-500/20"
-                : "bg-white/10 border-white/20 backdrop-blur-lg hover:bg-white/15"
-            }`}
-          >
-            <div className="text-purple-300 text-sm font-semibold mb-2">Events</div>
-            <div className="text-4xl font-bold text-white">{data?.eventInfo.length || 0}</div>
-          </button>
+        <div className="flex-1 overflow-hidden">
+          <RoleListingSearch 
+            listings={data?.roleListings || []} 
+            onSelectListing={setSelectedListing}
+          />
         </div>
-
-        <section className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-          {renderContent()}
-        </section>
       </div>
 
-      <DataReceivedDetails item={selectedDataReceived} onClose={() => setSelectedDataReceived(null)} />
-      <EventInfoDetails event={selectedEvent} onClose={() => setSelectedEvent(null)} />
       <AdminDialog isOpen={showAdmin} onClose={() => setShowAdmin(false)} />
     </main>
   );

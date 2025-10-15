@@ -16,7 +16,7 @@ export default function RoleListingsList({ listings, onSelectListing }: RoleList
 
   const handleItemMouseEnter = (listingId: string, event: React.MouseEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    setPopupPosition({ x: rect.left + rect.width / 2, y: rect.top });
+    setPopupPosition({ x: rect.left, y: rect.top });
     setHoveredListing(listingId);
     
     if (hoverTimeoutRef.current) {
@@ -69,7 +69,6 @@ export default function RoleListingsList({ listings, onSelectListing }: RoleList
 
   return (
     <>
-      <h2 className="text-2xl font-bold text-white mb-4">Role Listings</h2>
       {listings && listings.length > 0 ? (
         <div className="space-y-3">
           {listings.map((listing) => {
@@ -103,8 +102,7 @@ export default function RoleListingsList({ listings, onSelectListing }: RoleList
           className="fixed z-50 bg-gradient-to-br from-slate-800 to-purple-900 border border-purple-400/30 rounded-lg shadow-2xl p-4 max-w-2xl max-h-96 overflow-y-auto"
           style={{
             left: `${popupPosition.x}px`,
-            top: `${popupPosition.y - 10}px`,
-            transform: 'translate(-50%, -100%)',
+            top: `${popupPosition.y}px`,
           }}
           onMouseLeave={handlePopupMouseLeave}
         >

@@ -34,6 +34,8 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
   const [filteredCompanyCounts, setFilteredCompanyCounts] = useState<Record<string, number>>({});
   const [filteredLocationCounts, setFilteredLocationCounts] = useState<Record<string, number>>({});
   const [filteredWorkArrangementCounts, setFilteredWorkArrangementCounts] = useState<Record<string, number>>({});
+  const [sortBy, setSortBy] = useState<string>("capturedAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   
   useEffect(() => {
     const uniqueCompanies = Array.from(new Set(
@@ -141,6 +143,40 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
     setFilteredWorkArrangementCounts(newFilteredWorkArrangementCounts);
   }, [listings, titleFilter, descriptionFilter, capturedAtFilter, companyFilter, locationFilter, workArrangementFilter]);
 
+  const sortedListings = [...filteredListings].sort((a, b) => {
+    let aVal: any;
+    let bVal: any;
+
+    switch (sortBy) {
+      case "title":
+        aVal = a.title.toLowerCase();
+        bVal = b.title.toLowerCase();
+        break;
+      case "company":
+        aVal = a.company?.name?.toLowerCase() || "";
+        bVal = b.company?.name?.toLowerCase() || "";
+        break;
+      case "location":
+        aVal = a.location ? `${a.location.city}, ${a.location.state.abbreviation}` : "";
+        bVal = b.location ? `${b.location.city}, ${b.location.state.abbreviation}` : "";
+        break;
+      case "capturedAt":
+        aVal = Number(a.capturedAt);
+        bVal = Number(b.capturedAt);
+        break;
+      case "workArrangement":
+        aVal = a.workArrangement || "";
+        bVal = b.workArrangement || "";
+        break;
+      default:
+        return 0;
+    }
+
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
   const handleMouseDown = () => {
     setIsDragging(true);
   };
@@ -173,7 +209,6 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
         className="h-full overflow-auto p-2"
         style={{ width: `${leftWidth}%` }}
       >
-        <h2 className="text-2xl font-bold text-white mb-4">Search Filters</h2>
         <div className="space-y-2">
           <div className="bg-white/5 rounded-lg p-3 border border-white/10">
             <input
@@ -349,7 +384,45 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
         className="h-full overflow-auto p-2"
         style={{ width: `${100 - leftWidth}%` }}
       >
-        <RoleListingsList listings={filteredListings} onSelectListing={onSelectListing} />
+        <div className="mb-4 flex items-center justify-between">
+          <div className="text-white font-semibold">
+            {filteredListings.length} {filteredListings.length === 1 ? 'result' : 'results'}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-white text-sm font-semibold">Sort by |</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-black/20 border border-purple-400/30 rounded-lg px-3 py-1 text-white text-sm"
+            >
+              <option value="capturedAt">Import Date</option>
+              <option value="title">Title</option>
+              <option value="company">Company</option>
+              <option value="location">Location</option>
+              <option value="workArrangement">Work Arrangement</option>
+            </select>
+            <button
+              onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+              className="p-2 bg-black/20 border border-purple-400/30 rounded-lg hover:bg-purple-500/30 transition-colors"
+              title={sortDirection === "asc" ? "Ascending" : "Descending"}
+            >
+              <svg
+                className={`w-4 h-4 text-white transition-transform ${sortDirection === "desc" ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 15l7-7 7 7"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <RoleListingsList listings={sortedListings} onSelectListing={onSelectListing} />
       </div>
     </div>
   );
