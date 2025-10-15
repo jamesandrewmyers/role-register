@@ -174,11 +174,8 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
         style={{ width: `${leftWidth}%` }}
       >
         <h2 className="text-2xl font-bold text-white mb-4">Search Filters</h2>
-        <div className="space-y-4">
-          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-            <label className="block text-purple-300 text-sm font-semibold mb-2">
-              Title
-            </label>
+        <div className="space-y-2">
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
             <input
               type="text"
               value={titleFilter}
@@ -188,10 +185,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
             />
           </div>
           
-          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-            <label className="block text-purple-300 text-sm font-semibold mb-2">
-              Description
-            </label>
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
             <input
               type="text"
               value={descriptionFilter}
@@ -201,21 +195,36 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
             />
           </div>
           
-          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-            <label className="block text-purple-300 text-sm font-semibold mb-2">
-              Captured Date
-            </label>
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
             <DatePicker
               selected={capturedAtFilter}
               onChange={(date) => setCapturedAtFilter(date)}
-              placeholderText="Select date..."
+              placeholderText="Select import date..."
               className="w-full bg-black/20 border border-purple-400/30 rounded-lg px-4 py-2 text-white placeholder-gray-500"
               dateFormat="MM/dd/yyyy"
               isClearable
+              onKeyDown={(e: React.KeyboardEvent<HTMLElement>) => {
+                // Progressive MM/DD/YYYY validator (partial-friendly)
+                const partialDate = /^(?:$|(?:0|[1-9]|0[1-9]|1[0-2])|(?:0?[1-9]|1[0-2])\/|(?:0?[1-9]|1[0-2])\/(?:0|[12]|3|0[1-9]|[12][0-9]|3[01])|(?:0?[1-9]|1[0-2])\/(?:0?[1-9]|[12][0-9]|3[01])\/|(?:0?[1-9]|1[0-2])\/(?:0?[1-9]|[12][0-9]|3[01])\/\d{0,4})$/;
+
+                const el = e.currentTarget as HTMLInputElement;
+                const k = e.key;
+
+                if (k.length === 1 && !/[0-9/]/.test(k)) { e.preventDefault(); return; }
+
+                if (k.length === 1) {
+                  const s = el.selectionStart ?? el.value.length;
+                  const t = el.selectionEnd ?? el.value.length;
+                  const next = el.value.slice(0, s) + k + el.value.slice(t);
+
+                  if (next.length > 10 || !partialDate.test(next)) e.preventDefault();
+                }
+              }}
+
             />
           </div>
           
-          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
             <label className="block text-purple-300 text-sm font-semibold mb-2">
               Company
             </label>
@@ -256,7 +265,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
             </div>
           </div>
           
-          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
             <label className="block text-purple-300 text-sm font-semibold mb-2">
               Location
             </label>
@@ -297,7 +306,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
             </div>
           </div>
           
-          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
             <label className="block text-purple-300 text-sm font-semibold mb-2">
               Work Arrangement
             </label>
