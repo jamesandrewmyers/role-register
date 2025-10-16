@@ -1,6 +1,6 @@
-# RoleRegister
+# Role Register
 
-RoleRegister is a **local-first job application tracking system** built with Next.js 15 and SQLite. It captures job postings from LinkedIn via a Chrome extension, extracts requirements using pattern-based parsing, and helps you manage your job search with event tracking and application status management.
+Role Register is a **local-first job application tracking system** built with Next.js 15 and SQLite. It captures job postings from LinkedIn via a Chrome extension, extracts requirements using pattern-based parsing, and helps you manage your job search with event tracking and application status management.
 
 ---
 <br/>
@@ -107,7 +107,7 @@ The application will be available at `http://localhost:3000`
 
 ### Backup Configuration (Optional)
 
-By default, RoleRegister automatically backs up your database:
+By default, Role Register automatically backs up your database:
 - On startup (if changes detected since last backup)
 - Every 15 minutes (if changes detected)
 
@@ -160,7 +160,7 @@ npm test
 
 ### Domain-Driven Design
 
-RoleRegister follows Domain-Driven Design (DDD) principles with clear separation of concerns:
+Role Register follows Domain-Driven Design (DDD) principles with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
