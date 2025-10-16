@@ -13,7 +13,8 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "screenshots": "concurrently --success first --kill-others \"DATABASE_PATH=data/fake_role_register.sqlite npm run dev\" \"wait-on http://localhost:3000 && electron scripts/capture-screenshots.js\""
   },
   "dependencies": {
     "@xenova/transformers": "^2.17.2",
