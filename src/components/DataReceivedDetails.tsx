@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import HtmlViewer from "./HtmlViewer";
 import { parseHtml, htmlToPlainText, parseVisualSections } from "@/lib/htmlParser";
+import { extractDescriptionDetails } from "@/lib/listingDescriptionExtractor";
 import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
 
 type DataReceived = DataReceivedDTO;
@@ -16,6 +17,7 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
   const [reprocessing, setReprocessing] = useState(false);
   const [showHtmlViewer, setShowHtmlViewer] = useState(false);
   const [showSections, setShowSections] = useState(false);
+  const [showExtractedDetails, setShowExtractedDetails] = useState(false);
 
   if (!item) return null;
 
@@ -76,6 +78,25 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
           <div className="flex items-center gap-3">
             {item.html && (
               <>
+                <button
+                  onClick={() => setShowExtractedDetails(true)}
+                  className="p-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg border border-purple-400/30 transition-colors"
+                  title="View Extracted Details"
+                >
+                  <svg
+                    className="w-5 h-5 text-purple-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                    />
+                  </svg>
+                </button>
                 <button
                   onClick={() => setShowSections(true)}
                   className="p-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg border border-purple-400/30 transition-colors"
@@ -172,6 +193,9 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
       {showSections && item.html && (
         <SectionsViewer html={item.html} onClose={() => setShowSections(false)} />
       )}
+      {showExtractedDetails && item.html && (
+        <ExtractedDetailsViewer html={item.html} onClose={() => setShowExtractedDetails(false)} />
+      )}
     </div>
   );
 }
@@ -228,6 +252,90 @@ function SectionsViewer({ html, onClose }: { html: string; onClose: () => void }
                 </div>
               </div>
             ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExtractedDetailsViewer({ html, onClose }: { html: string; onClose: () => void }) {
+  const extractedDetails = useMemo(() => {
+    const nodes = parseHtml(html);
+    if (nodes.length === 0) return { requirements: [], responsibilities: [], benefits: [] };
+    const sections = parseVisualSections(nodes[0]);
+    return extractDescriptionDetails(sections);
+  }, [html]);
+
+  const hasAnyContent = extractedDetails.requirements.length > 0 || 
+                       extractedDetails.responsibilities.length > 0 || 
+                       extractedDetails.benefits.length > 0;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-gradient-to-br from-slate-800 to-purple-900 rounded-2xl border border-purple-400/30 shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-gradient-to-br from-slate-800 to-purple-900 border-b border-purple-400/30 p-6 flex justify-between items-center">
+          <h3 className="text-2xl font-bold text-white">Extracted Details</h3>
+          <button
+            onClick={onClose}
+            className="text-purple-300 hover:text-white transition-colors text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto space-y-6">
+          {!hasAnyContent ? (
+            <div className="text-purple-300 text-center py-8">No details extracted</div>
+          ) : (
+            <>
+              {extractedDetails.requirements.length > 0 && (
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h4 className="text-purple-300 font-semibold text-lg mb-3">Requirements</h4>
+                  <ul className="space-y-2">
+                    {extractedDetails.requirements.map((item, index) => (
+                      <li key={index} className="text-white text-sm flex gap-2">
+                        <span className="text-purple-400 mt-1">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {extractedDetails.responsibilities.length > 0 && (
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h4 className="text-purple-300 font-semibold text-lg mb-3">Responsibilities</h4>
+                  <ul className="space-y-2">
+                    {extractedDetails.responsibilities.map((item, index) => (
+                      <li key={index} className="text-white text-sm flex gap-2">
+                        <span className="text-purple-400 mt-1">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {extractedDetails.benefits.length > 0 && (
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h4 className="text-purple-300 font-semibold text-lg mb-3">Benefits</h4>
+                  <ul className="space-y-2">
+                    {extractedDetails.benefits.map((item, index) => (
+                      <li key={index} className="text-white text-sm flex gap-2">
+                        <span className="text-purple-400 mt-1">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
