@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import HtmlViewer from "./HtmlViewer";
-import { parseHtml, htmlToPlainText } from "@/lib/htmlParser";
+import { parseHtml, htmlToPlainText, parseVisualSections } from "@/lib/htmlParser";
 import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
 
 type DataReceived = DataReceivedDTO;
@@ -15,6 +15,7 @@ interface DataReceivedDetailsProps {
 export default function DataReceivedDetails({ item, onClose }: DataReceivedDetailsProps) {
   const [reprocessing, setReprocessing] = useState(false);
   const [showHtmlViewer, setShowHtmlViewer] = useState(false);
+  const [showSections, setShowSections] = useState(false);
 
   if (!item) return null;
 
@@ -74,25 +75,46 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
           <h3 className="text-2xl font-bold text-white">Details</h3>
           <div className="flex items-center gap-3">
             {item.html && (
-              <button
-                onClick={() => setShowHtmlViewer(true)}
-                className="p-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg border border-purple-400/30 transition-colors"
-                title="View HTML"
-              >
-                <svg
-                  className="w-5 h-5 text-purple-300"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <>
+                <button
+                  onClick={() => setShowSections(true)}
+                  className="p-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg border border-purple-400/30 transition-colors"
+                  title="View Sections"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-5 h-5 text-purple-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setShowHtmlViewer(true)}
+                  className="p-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg border border-purple-400/30 transition-colors"
+                  title="View HTML"
+                >
+                  <svg
+                    className="w-5 h-5 text-purple-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                    />
+                  </svg>
+                </button>
+              </>
             )}
             <button
               onClick={handleReprocess}
@@ -147,6 +169,68 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
       {showHtmlViewer && item.html && (
         <HtmlViewer html={item.html} onClose={() => setShowHtmlViewer(false)} />
       )}
+      {showSections && item.html && (
+        <SectionsViewer html={item.html} onClose={() => setShowSections(false)} />
+      )}
+    </div>
+  );
+}
+
+function SectionsViewer({ html, onClose }: { html: string; onClose: () => void }) {
+  const sections = useMemo(() => {
+    const nodes = parseHtml(html);
+    if (nodes.length === 0) return [];
+    return parseVisualSections(nodes[0]);
+  }, [html]);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-gradient-to-br from-slate-800 to-purple-900 rounded-2xl border border-purple-400/30 shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-gradient-to-br from-slate-800 to-purple-900 border-b border-purple-400/30 p-6 flex justify-between items-center">
+          <h3 className="text-2xl font-bold text-white">Visual Sections</h3>
+          <button
+            onClick={onClose}
+            className="text-purple-300 hover:text-white transition-colors text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto space-y-4">
+          {sections.length === 0 ? (
+            <div className="text-purple-300 text-center py-8">No sections detected</div>
+          ) : (
+            sections.map((section, index) => (
+              <div
+                key={index}
+                className="bg-white/5 rounded-lg p-4 border border-white/10"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-purple-400 text-xs font-semibold uppercase tracking-wide px-2 py-1 bg-purple-500/20 rounded">
+                    {section.type}
+                  </span>
+                  {section.label && (
+                    <span className="text-purple-300 font-semibold">
+                      {section.label}
+                    </span>
+                  )}
+                  <span className="text-purple-400 text-xs ml-auto">
+                    {Math.round(section.confidence * 100)}% confidence
+                  </span>
+                </div>
+                <div className="text-white text-sm bg-black/20 p-3 rounded whitespace-pre-wrap max-h-60 overflow-y-auto">
+                  {section.content}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
