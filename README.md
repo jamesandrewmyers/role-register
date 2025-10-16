@@ -3,6 +3,8 @@
 RoleRegister is a **local-first job application tracking system** built with Next.js 15 and SQLite. It captures job postings from LinkedIn via a Chrome extension, extracts requirements using pattern-based parsing, and helps you manage your job search with event tracking and application status management.
 
 ---
+<br/>
+<img src="screenshots/01-main-search.png"/>
 
 ## Current Features
 
@@ -12,11 +14,18 @@ RoleRegister is a **local-first job application tracking system** built with Nex
 - **Pattern-Based Requirement Extraction**: Identifies required and nice-to-have qualifications from job descriptions
 - **Local Storage**: All data stored locally in SQLite database
 
+<br/>
+<img src="screenshots/02-role-listing-details.png"/>
+
 ### Role Listing Management
 - **Detailed View**: Split-pane interface with resizable divider showing job description and metadata
 - **Event Tracking**: Track application timeline with custom events (Application, Interview, Offer, Not Applying)
 - **Status Management**: Mark listings with application status and dates
 - **Company & Location Data**: Automatic extraction and normalization of company names and locations
+
+<br/>
+<img src="screenshots/04-admin-actions.png"/>
+<br/>
 
 ### Data Management
 - **Admin Interface**: 
