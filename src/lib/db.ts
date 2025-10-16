@@ -8,6 +8,14 @@ const DB_PATH_CONFIG = path.resolve(process.cwd(), "data/db_path.json");
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), "data/role_register.sqlite");
 
 function loadDatabasePath(): string {
+  // Check for environment variable first
+  if (process.env.DATABASE_PATH) {
+    const envPath = path.resolve(process.cwd(), process.env.DATABASE_PATH);
+    console.log(`[DB] Using database path from DATABASE_PATH env var: ${envPath}`);
+    return envPath;
+  }
+  
+  // Fall back to config file
   try {
     if (fs.existsSync(DB_PATH_CONFIG)) {
       const config = JSON.parse(fs.readFileSync(DB_PATH_CONFIG, "utf-8"));
