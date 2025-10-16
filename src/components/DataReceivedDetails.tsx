@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import HtmlViewer from "./HtmlViewer";
+import { parseHtml, htmlToPlainText } from "@/lib/htmlParser";
 import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
 
 type DataReceived = DataReceivedDTO;
@@ -46,8 +47,15 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
     }
   };
 
+  const formattedHtml = useMemo(() => {
+    if (!item.html) return null;
+    const nodes = parseHtml(item.html);
+    return htmlToPlainText(nodes);
+  }, [item.html]);
+
   const displayData = {
     ...item,
+    html: formattedHtml,
     receivedAt: new Date(item.receivedAt * 1000).toLocaleString(),
   };
   
@@ -125,11 +133,11 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
               </div>
               <div className="text-white break-words">
                 {typeof value === 'string' && value.length > 200 ? (
-                  <div className="text-sm font-mono bg-black/20 p-3 rounded overflow-x-auto max-h-40 overflow-y-auto">
+                  <div className="text-sm font-mono bg-black/20 p-3 rounded overflow-x-auto max-h-40 overflow-y-auto whitespace-pre-wrap">
                     {value}
                   </div>
                 ) : (
-                  String(value)
+                  <span className="whitespace-pre-wrap">{String(value)}</span>
                 )}
               </div>
             </div>

@@ -1,82 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { parseHtml, type HtmlNode } from "@/lib/htmlParser";
 
 interface HtmlViewerProps {
   html: string;
   onClose: () => void;
-}
-
-interface HtmlNode {
-  type: 'element' | 'text' | 'comment';
-  tag?: string;
-  content?: string;
-  attributes?: Record<string, string>;
-  children?: HtmlNode[];
-}
-
-function parseHtml(html: string): HtmlNode[] {
-  const nodes: HtmlNode[] = [];
-  const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)[^>]*>/g;
-  const selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
-  
-  let lastIndex = 0;
-  let match;
-  const stack: HtmlNode[] = [];
-  let currentParent: HtmlNode[] = nodes;
-
-  while ((match = tagRegex.exec(html)) !== null) {
-    const textBefore = html.slice(lastIndex, match.index).trim();
-    if (textBefore) {
-      currentParent.push({ type: 'text', content: textBefore });
-    }
-
-    const fullTag = match[0];
-    const tagName = match[1].toLowerCase();
-    const isClosing = fullTag.startsWith('</');
-    const isSelfClosing = selfClosingTags.includes(tagName) || fullTag.endsWith('/>');
-
-    if (isClosing) {
-      if (stack.length > 0) {
-        const parent = stack.pop();
-        if (parent && stack.length > 0) {
-          currentParent = stack[stack.length - 1].children!;
-        } else {
-          currentParent = nodes;
-        }
-      }
-    } else {
-      const attrs: Record<string, string> = {};
-      const attrRegex = /([a-zA-Z][a-zA-Z0-9-]*)\s*=\s*["']([^"']*)["']/g;
-      let attrMatch;
-      while ((attrMatch = attrRegex.exec(fullTag)) !== null) {
-        attrs[attrMatch[1]] = attrMatch[2];
-      }
-
-      const node: HtmlNode = {
-        type: 'element',
-        tag: tagName,
-        attributes: Object.keys(attrs).length > 0 ? attrs : undefined,
-        children: []
-      };
-
-      currentParent.push(node);
-
-      if (!isSelfClosing) {
-        stack.push(node);
-        currentParent = node.children!;
-      }
-    }
-
-    lastIndex = match.index + fullTag.length;
-  }
-
-  const textAfter = html.slice(lastIndex).trim();
-  if (textAfter) {
-    currentParent.push({ type: 'text', content: textAfter });
-  }
-
-  return nodes;
 }
 
 const globalFirstMatch = { found: false };

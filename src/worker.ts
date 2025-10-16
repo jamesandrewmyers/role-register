@@ -17,6 +17,7 @@ import type { RoleCompanyId } from "@/domain/entities/roleCompany";
 import type { RoleListingId } from "@/domain/entities/roleListing";
 import type { RoleLocationId } from "@/domain/entities/roleLocation";
 import type { RoleQualificationsId } from "@/domain/entities/roleQualifications";
+import { parseHtml, htmlToPlainText } from "./lib/htmlParser";
 
 if (!parentPort) {
   throw new Error("Worker must be started with a parentPort");
@@ -71,7 +72,7 @@ parentPort.on("message", async (eventId: string) => {
         //parsingLog += `[LinkedIn Parser] Job Description: ${jobDescription}\n`;
 
         if (jobDescription) {
-          const extracted = extractRequirements(jobDescription);
+          const extracted = extractRequirements(htmlToPlainText(parseHtml(jobDescription)));
           parsingLog += `\n[Requirement Extractor] ${extracted.summary}\n`;
           
           if (extracted.requirements.length > 0) {
