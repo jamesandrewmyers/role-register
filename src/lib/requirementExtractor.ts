@@ -50,7 +50,6 @@ function splitIntoSections(text: string): Section[] {
   
   for (const line of lines) {
     const trimmed = line.trim();
-    
     const headerMatch = trimmed.match(/^([A-Z][A-Za-z\s&\/\-,'\u2019]+):?\s*$/);
     if (headerMatch && trimmed.length < 80) {
       if (currentSection) {

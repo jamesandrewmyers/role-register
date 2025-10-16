@@ -36,8 +36,15 @@ bus.on("event.created", ({ id }) => {
   }
 
   console.log("[Event Bus] Starting worker for event:", id);
+  
+  // Use --inspect-brk for debugging when DEBUG_WORKERS is set, otherwise --inspect for logging
+  let execArgv: string[] = [];
+  if (process.env.NODE_ENV === 'development') {
+    execArgv = process.env.DEBUG_WORKERS === 'true' ? ['--inspect-brk=9229'] : ['--inspect'];
+  }
+  
   const worker = new Worker(path.resolve(process.cwd(), "src/worker.js"), {
-    execArgv: process.env.NODE_ENV === 'development' ? ['--inspect'] : []
+    execArgv
   });
   
   activeWorkers.add(worker);

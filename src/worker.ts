@@ -242,27 +242,32 @@ parentPort.on("message", async (eventId: string) => {
   } catch (err: unknown) {
     const retries = (job.retries ?? 0) + 1;
 
-    if (retries < MAX_RETRIES) {
-      // Put back into pending for retry
-      eventInfoService.updateEventStatus(eventId as EventInfoId, "pending", String(err));
-      eventInfoService.incrementEventRetries(eventId as EventInfoId);
+    try {
+      runInTransaction(() => {
+        if (retries < MAX_RETRIES) {
+          // Put back into pending for retry
+          eventInfoService.updateEventStatus(eventId as EventInfoId, "pending", String(err));
+          eventInfoService.incrementEventRetries(eventId as EventInfoId);
+        } else {
+          // Mark as permanently failed
+          eventInfoService.updateEventStatus(eventId as EventInfoId, "error", String(err));
+          eventInfoService.incrementEventRetries(eventId as EventInfoId);
+        }
+      });
 
       parentPort?.postMessage({
         eventId,
-        status: "retrying",
+        status: retries < MAX_RETRIES ? "retrying" : "error",
         retries,
         error: String(err),
       });
-    } else {
-      // Mark as permanently failed
-      eventInfoService.updateEventStatus(eventId as EventInfoId, "error", String(err));
-      eventInfoService.incrementEventRetries(eventId as EventInfoId);
-
+    } catch (dbErr: unknown) {
+      console.error(`[Worker] Failed to update event status: ${String(dbErr)}`);
       parentPort?.postMessage({
         eventId,
         status: "error",
         retries,
-        error: String(err),
+        error: `${String(err)} (DB update failed: ${String(dbErr)})`,
       });
     }
   }
