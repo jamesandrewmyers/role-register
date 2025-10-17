@@ -1,7 +1,8 @@
 import { parentPort } from "worker_threads";
 import { randomUUID } from "node:crypto";
 import * as cheerio from "cheerio";
-import { extractRequirements } from "@/lib/requirementExtractor";
+import { parseHtml, htmlToPlainText, parseVisualSections } from "@/lib/htmlParser";
+import { extractDescriptionDetails } from "@/lib/listingDescriptionExtractor";
 import { parseLinkedInJob } from "@/lib/linkedIn";
 import { runInTransaction } from "@/lib/db";
 import * as eventInfoService from "@/services/eventInfoService";
@@ -10,14 +11,13 @@ import * as roleCompanyService from "@/services/roleCompanyService";
 import * as roleListingService from "@/services/roleListingService";
 import * as roleLocationService from "@/services/roleLocationService";
 import * as roleStateService from "@/services/roleStateService";
-import * as roleQualificationsService from "@/services/roleQualificationsService";
+import * as roleLineItemsService from "@/services/roleLineItemsService";
 import type { EventInfoId } from "@/domain/entities/eventInfo";
 import type { DataReceivedId } from "@/domain/entities/dataReceived";
 import type { RoleCompanyId } from "@/domain/entities/roleCompany";
 import type { RoleListingId } from "@/domain/entities/roleListing";
 import type { RoleLocationId } from "@/domain/entities/roleLocation";
-import type { RoleQualificationsId } from "@/domain/entities/roleQualifications";
-import { parseHtml, htmlToPlainText } from "./lib/htmlParser";
+import type { RoleLineItemsId } from "@/domain/entities/roleLineItems";
 
 if (!parentPort) {
   throw new Error("Worker must be started with a parentPort");
@@ -72,49 +72,32 @@ parentPort.on("message", async (eventId: string) => {
         //parsingLog += `[LinkedIn Parser] Job Description: ${jobDescription}\n`;
 
         if (jobDescription) {
-          const extracted = extractRequirements(htmlToPlainText(parseHtml(jobDescription)));
-          parsingLog += `\n[Requirement Extractor] ${extracted.summary}\n`;
+          const nodes = parseHtml("<div>"+jobDescription+"</div>");
+          const sections = nodes.length > 0 ? parseVisualSections(nodes[0]) : [];
+          const extracted = extractDescriptionDetails(sections);
+          
+          const totalItems = extracted.requirements.length + extracted.responsibilities.length + extracted.benefits.length;
+          parsingLog += `\n[Description Extractor] Extracted ${totalItems} items from ${sections.length} sections\n`;
           
           if (extracted.requirements.length > 0) {
-            parsingLog += `[Requirement Extractor] Requirements by confidence:\n`;
-            
-            const required = extracted.requirements.filter(r => r.type === 'required');
-            const niceToHave = extracted.requirements.filter(r => r.type === 'nice-to-have');
-            
-            if (required.length > 0) {
-              parsingLog += `\nRequired (${required.length}):\n`;
-              const byConfidence = {
-                high: required.filter(r => r.confidence === 'high'),
-                medium: required.filter(r => r.confidence === 'medium'),
-                low: required.filter(r => r.confidence === 'low')
-              };
-              
-              if (byConfidence.high.length > 0) {
-                parsingLog += `  High Confidence (${byConfidence.high.length}):\n`;
-                byConfidence.high.forEach(r => {
-                  parsingLog += `    • ${r.text} [${r.category}]\n`;
-                });
-              }
-              if (byConfidence.medium.length > 0) {
-                parsingLog += `  Medium Confidence (${byConfidence.medium.length}):\n`;
-                byConfidence.medium.forEach(r => {
-                  parsingLog += `    • ${r.text} [${r.category}]\n`;
-                });
-              }
-              if (byConfidence.low.length > 0) {
-                parsingLog += `  Low Confidence (${byConfidence.low.length}):\n`;
-                byConfidence.low.forEach(r => {
-                  parsingLog += `    • ${r.text} [${r.category}]\n`;
-                });
-              }
-            }
-            
-            if (niceToHave.length > 0) {
-              parsingLog += `\nNice-to-Have (${niceToHave.length}):\n`;
-              niceToHave.forEach(r => {
-                parsingLog += `  • ${r.text} [${r.category}, ${r.confidence} confidence]\n`;
-              });
-            }
+            parsingLog += `\nRequirements (${extracted.requirements.length}):\n`;
+            extracted.requirements.forEach(req => {
+              parsingLog += `  • ${req}\n`;
+            });
+          }
+          
+          if (extracted.responsibilities.length > 0) {
+            parsingLog += `\nResponsibilities (${extracted.responsibilities.length}):\n`;
+            extracted.responsibilities.forEach(resp => {
+              parsingLog += `  • ${resp}\n`;
+            });
+          }
+          
+          if (extracted.benefits.length > 0) {
+            parsingLog += `\nBenefits (${extracted.benefits.length}):\n`;
+            extracted.benefits.forEach(ben => {
+              parsingLog += `  • ${ben}\n`;
+            });
           }
           
           if (jobTitle && companyName && jobDescription) {
@@ -175,7 +158,7 @@ parentPort.on("message", async (eventId: string) => {
                 capturedAt: Math.floor(new Date().valueOf() / 1000),
               });
               
-              roleQualificationsService.deleteQualificationsByListingId(existingListing.id);
+              roleLineItemsService.deleteLineItemsByListingId(existingListing.id);
               
               parsingLog += `[Database] Updated existing role listing: ${jobTitle}\n`;
             } else {
@@ -195,29 +178,32 @@ parentPort.on("message", async (eventId: string) => {
               parsingLog += `[Database] Created role listing: ${jobTitle}\n`;
             }
             
-            if (extracted.requirements.length > 0) {
-              const requirements = extracted.requirements.filter(r => r.type === 'required');
-              const niceToHaves = extracted.requirements.filter(r => r.type === 'nice-to-have');
-              
-              for (const req of requirements) {
-                roleQualificationsService.createQualification({
-                  id: randomUUID() as RoleQualificationsId,
-                  listingId: listingId as RoleListingId,
-                  description: req.text,
-                  type: 'requirement',
-                });
+            const lineItemsToCreate = [
+              ...extracted.requirements.map(text => ({
+                id: randomUUID() as RoleLineItemsId,
+                listingId: listingId as RoleListingId,
+                description: text,
+                type: 'requirement' as const,
+              })),
+              ...extracted.responsibilities.map(text => ({
+                id: randomUUID() as RoleLineItemsId,
+                listingId: listingId as RoleListingId,
+                description: text,
+                type: 'responsibility' as const,
+              })),
+              ...extracted.benefits.map(text => ({
+                id: randomUUID() as RoleLineItemsId,
+                listingId: listingId as RoleListingId,
+                description: text,
+                type: 'benefit' as const,
+              })),
+            ];
+            
+            if (lineItemsToCreate.length > 0) {
+              for (const item of lineItemsToCreate) {
+                roleLineItemsService.createLineItem(item);
               }
-              
-              for (const nth of niceToHaves) {
-                roleQualificationsService.createQualification({
-                  id: randomUUID() as RoleQualificationsId,
-                  listingId: listingId as RoleListingId,
-                  description: nth.text,
-                  type: 'nice to have',
-                });
-              }
-              
-              parsingLog += `[Database] Created ${requirements.length} requirements and ${niceToHaves.length} nice-to-haves\n`;
+              parsingLog += `[Database] Created ${extracted.requirements.length} requirements, ${extracted.responsibilities.length} responsibilities, and ${extracted.benefits.length} benefits\n`;
             }
           }
         }

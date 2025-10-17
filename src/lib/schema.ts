@@ -107,15 +107,15 @@ export const roleEvent = sqliteTable("role_event", {
 });
 
 // -----------------------------
-// role_qualifications
+// role_line_items
 // -----------------------------
-export const roleQualifications = sqliteTable("role_qualifications", {
+export const roleLineItems = sqliteTable("role_line_items", {
   id: text("id").primaryKey(), // UUID
   listingId: text("listing_id")
     .notNull()
     .references(() => roleListing.id, { onDelete: "cascade" }),
   description: text("description").notNull(),
-  type: text("type").notNull(), // "requirement" | "nice to have"
+  type: text("type").notNull(), // "requirement" | "nice to have" | "benefit" | "responsibility"
   createdAt: integer("created_at").notNull().default(sql`(strftime('%s','now'))`),
 });
 
