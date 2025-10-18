@@ -190,6 +190,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
   const sectionKeywords = {
     responsibilities: ['responsibilit', 'duties', 'what you', 'you will', 'day to day', 'role description'],
     requirements: ['requirement', 'qualification', 'must have', 'you have', 'experience', 'skills', 'what we'],
+    'nice to have': ['nice to have', 'preferred', 'bonus', 'plus'],
     benefits: ['benefit', 'we offer', 'perks', 'compensation', 'salary', 'package'],
     about: ['about us', 'about the', 'who we are', 'our company', 'our team', 'company description'],
   };

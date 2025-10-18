@@ -154,7 +154,7 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
           </div>
 
           <RoleListingLineItemList listing={listing} type="requirement" />
-          <RoleListingLineItemList listing={listing} type="nice to have" />
+          <RoleListingLineItemList listing={listing} type="nicetohave" />
           <RoleListingLineItemList listing={listing} type="responsibility" />
           <RoleListingLineItemList listing={listing} type="benefit" />
         </div>

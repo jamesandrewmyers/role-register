@@ -2,6 +2,7 @@ import type { VisualSection } from './htmlParser';
 
 export interface ExtractedDescriptionDetails {
   requirements: string[];
+  nicetohave: string[];
   responsibilities: string[];
   benefits: string[];
 }
@@ -27,6 +28,7 @@ export interface ExtractedDescriptionDetails {
 export function extractDescriptionDetails(sections: VisualSection[]): ExtractedDescriptionDetails {
   const result: ExtractedDescriptionDetails = {
     requirements: [],
+    nicetohave: [],
     responsibilities: [],
     benefits: []
   };
@@ -34,6 +36,8 @@ export function extractDescriptionDetails(sections: VisualSection[]): ExtractedD
   const labelMap: Record<string, keyof ExtractedDescriptionDetails> = {
     'Requirements': 'requirements',
     'Qualifications': 'requirements',
+    'Nice to have': 'nicetohave',
+    'Preferred': 'nicetohave',
     'Responsibilities': 'responsibilities',
     'Benefits': 'benefits'
   };
@@ -45,6 +49,7 @@ export function extractDescriptionDetails(sections: VisualSection[]): ExtractedD
   });
 
   for (const section of sortedSections) {
+    if (!section.type || section.type === 'section') continue;
     if (!section.label) continue;
 
     const targetKey = labelMap[section.label];

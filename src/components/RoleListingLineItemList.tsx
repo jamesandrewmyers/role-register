@@ -44,7 +44,7 @@ export default function RoleListingLineItemList({ listing, type }: RoleListingLi
 
   const typeLabels: Record<LineItemType, string> = {
     requirement: "Requirements",
-    "nice to have": "Nice to Have",
+    nicetohave: "Nice to Have",
     benefit: "Benefits",
     responsibility: "Responsibilities"
   };

@@ -115,7 +115,7 @@ export const roleLineItems = sqliteTable("role_line_items", {
     .notNull()
     .references(() => roleListing.id, { onDelete: "cascade" }),
   description: text("description").notNull(),
-  type: text("type").notNull(), // "requirement" | "nice to have" | "benefit" | "responsibility"
+  type: text("type").notNull(), // "requirement" | "nicetohave" | "benefit" | "responsibility"
   createdAt: integer("created_at").notNull().default(sql`(strftime('%s','now'))`),
 });
 

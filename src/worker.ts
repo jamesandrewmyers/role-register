@@ -76,13 +76,20 @@ parentPort.on("message", async (eventId: string) => {
           const sections = nodes.length > 0 ? parseVisualSections(nodes[0]) : [];
           const extracted = extractDescriptionDetails(sections);
           
-          const totalItems = extracted.requirements.length + extracted.responsibilities.length + extracted.benefits.length;
+          const totalItems = extracted.requirements.length + extracted.nicetohave.length + extracted.responsibilities.length + extracted.benefits.length;
           parsingLog += `\n[Description Extractor] Extracted ${totalItems} items from ${sections.length} sections\n`;
           
           if (extracted.requirements.length > 0) {
             parsingLog += `\nRequirements (${extracted.requirements.length}):\n`;
             extracted.requirements.forEach(req => {
               parsingLog += `  • ${req}\n`;
+            });
+          }
+          
+          if (extracted.nicetohave.length > 0) {
+            parsingLog += `\nNice to Have (${extracted.nicetohave.length}):\n`;
+            extracted.nicetohave.forEach(nth => {
+              parsingLog += `  • ${nth}\n`;
             });
           }
           
@@ -185,6 +192,12 @@ parentPort.on("message", async (eventId: string) => {
                 description: text,
                 type: 'requirement' as const,
               })),
+              ...extracted.nicetohave.map(text => ({
+                id: randomUUID() as RoleLineItemsId,
+                listingId: listingId as RoleListingId,
+                description: text,
+                type: 'nicetohave' as const,
+              })),
               ...extracted.responsibilities.map(text => ({
                 id: randomUUID() as RoleLineItemsId,
                 listingId: listingId as RoleListingId,
@@ -203,7 +216,7 @@ parentPort.on("message", async (eventId: string) => {
               for (const item of lineItemsToCreate) {
                 roleLineItemsService.createLineItem(item);
               }
-              parsingLog += `[Database] Created ${extracted.requirements.length} requirements, ${extracted.responsibilities.length} responsibilities, and ${extracted.benefits.length} benefits\n`;
+              parsingLog += `[Database] Created ${extracted.requirements.length} requirements, ${extracted.nicetohave.length} nice-to-haves, ${extracted.responsibilities.length} responsibilities, and ${extracted.benefits.length} benefits\n`;
             }
           }
         }
