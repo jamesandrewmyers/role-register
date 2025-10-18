@@ -3,6 +3,7 @@
 import { useState } from "react";
 import RoleListingEventList from "./RoleListingEventList";
 import RoleListingDetails from "./RoleListingDetails";
+import RoleListingLineItemList from "./RoleListingLineItemList";
 import type { EnrichedRoleListingDTO } from "@/dto/enrichedRoleListing.dto";
 
 interface RoleListingMainViewProps {
@@ -151,6 +152,11 @@ export default function RoleListingMainView({ listing, sidebarChildren }: RoleLi
               />
             </div>
           </div>
+
+          <RoleListingLineItemList listing={listing} type="requirement" />
+          <RoleListingLineItemList listing={listing} type="nice to have" />
+          <RoleListingLineItemList listing={listing} type="responsibility" />
+          <RoleListingLineItemList listing={listing} type="benefit" />
         </div>
       </div>
     </div>
