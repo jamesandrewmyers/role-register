@@ -200,7 +200,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
 
   return (
     <div 
-      className="flex h-screen w-full"
+      className="flex h-full w-full"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
@@ -381,7 +381,7 @@ export default function RoleListingSearch({ listings, onSelectListing }: RoleLis
       </div>
 
       <div 
-        className="h-full overflow-auto p-2"
+        className="h-full overflow-auto p-2 pb-8"
         style={{ width: `${100 - leftWidth}%` }}
       >
         <div className="mb-4 flex items-center justify-between">

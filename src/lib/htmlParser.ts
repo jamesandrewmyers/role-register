@@ -162,6 +162,7 @@ export function htmlToPlainText(nodes: HtmlNode[]): string {
 export interface VisualSection {
   type: 'title' | 'summary' | 'section' | 'list' | 'unknown';
   label?: string;
+  lineItemType?: 'requirements' | 'responsibilities' | 'nicetohave' | 'benefits';
   content: string;
   node: HtmlNode;
   confidence: number;
@@ -188,9 +189,9 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
   const sections: VisualSection[] = [];
   
   const sectionKeywords = {
-    responsibilities: ['responsibilit', 'duties', 'what you', 'you will', 'day to day', 'role description'],
-    requirements: ['requirement', 'qualification', 'must have', 'you have', 'experience', 'skills', 'what we'],
-    'nice to have': ['nice to have', 'preferred', 'bonus', 'plus'],
+    responsibilities: ['responsibilit', 'duties', 'what you', 'you will', 'day to day', 'role description', 'key responsibilit'],
+    requirements: ['requirement', 'qualification', 'must have', 'must-have', 'you have', 'experience', 'skills', 'what we'],
+    nicetohave: ['nice to have', 'nice-to-have', 'preferred', 'bonus', 'plus'],
     benefits: ['benefit', 'we offer', 'perks', 'compensation', 'salary', 'package'],
     about: ['about us', 'about the', 'who we are', 'our company', 'our team', 'company description'],
   };
@@ -218,8 +219,17 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     return text.trim();
   }
 
-  function classifySection(text: string, tag?: string): { type: VisualSection['type']; label?: string; confidence: number } {
-    const lowerText = text.toLowerCase().trim();
+  function cleanSectionText(text: string): string {
+    return text
+      .replace(/^\*\*\s*/, '')
+      .replace(/\s*\*\*$/, '')
+      .replace(/:\s*$/, '')
+      .trim();
+  }
+
+  function classifySection(text: string, tag?: string): { type: VisualSection['type']; label?: string; lineItemType?: VisualSection['lineItemType']; confidence: number } {
+    const cleanedText = cleanSectionText(text);
+    const lowerText = cleanedText.toLowerCase().trim();
     
     if ((tag === 'h1' || tag === 'h2') && text.length < 100) {
       return { type: 'title', confidence: 0.9 };
@@ -228,9 +238,14 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     for (const [category, keywords] of Object.entries(sectionKeywords)) {
       for (const keyword of keywords) {
         if (lowerText.includes(keyword)) {
+          const lineItemType = ['requirements', 'responsibilities', 'nicetohave', 'benefits'].includes(category) 
+            ? category as VisualSection['lineItemType']
+            : undefined;
+          
           return {
             type: 'section',
             label: category.charAt(0).toUpperCase() + category.slice(1),
+            lineItemType,
             confidence: 0.8
           };
         }
@@ -242,7 +257,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     }
 
     if (tag && ['h3', 'h4', 'h5', 'h6'].includes(tag)) {
-      return { type: 'section', label: text.slice(0, 50), confidence: 0.6 };
+      return { type: 'section', label: cleanedText.slice(0, 50), confidence: 0.6 };
     }
 
     if (text.length < 200 && text.length > 20 && (tag === 'p' || tag === 'div')) {
@@ -304,7 +319,8 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
           content: listText,
           node: node,
           confidence: 0.7,
-          label: prevSection?.label
+          label: prevSection?.label,
+          lineItemType: prevSection?.lineItemType
         });
       }
       return;

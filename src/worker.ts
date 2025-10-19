@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto";
 import * as cheerio from "cheerio";
 import { parseHtml, htmlToPlainText, parseVisualSections } from "@/lib/htmlParser";
 import { extractDescriptionDetails } from "@/lib/listingDescriptionExtractor";
-import { parseLinkedInJob } from "@/lib/linkedIn";
+import { parseLinkedInJob } from "@/lib/sites/linkedIn";
+import { parseIndeedJob } from "@/lib/sites/indeed";
 import { runInTransaction } from "@/lib/db";
 import * as eventInfoService from "@/services/eventInfoService";
 import * as dataReceivedService from "@/services/dataReceivedService";
@@ -73,6 +74,165 @@ parentPort.on("message", async (eventId: string) => {
 
         if (jobDescription) {
           const nodes = parseHtml("<div>"+jobDescription+"</div>");
+          const sections = nodes.length > 0 ? parseVisualSections(nodes[0]) : [];
+          const extracted = extractDescriptionDetails(sections);
+          
+          const totalItems = extracted.requirements.length + extracted.nicetohave.length + extracted.responsibilities.length + extracted.benefits.length;
+          parsingLog += `\n[Description Extractor] Extracted ${totalItems} items from ${sections.length} sections\n`;
+          
+          if (extracted.requirements.length > 0) {
+            parsingLog += `\nRequirements (${extracted.requirements.length}):\n`;
+            extracted.requirements.forEach(req => {
+              parsingLog += `  • ${req}\n`;
+            });
+          }
+          
+          if (extracted.nicetohave.length > 0) {
+            parsingLog += `\nNice to Have (${extracted.nicetohave.length}):\n`;
+            extracted.nicetohave.forEach(nth => {
+              parsingLog += `  • ${nth}\n`;
+            });
+          }
+          
+          if (extracted.responsibilities.length > 0) {
+            parsingLog += `\nResponsibilities (${extracted.responsibilities.length}):\n`;
+            extracted.responsibilities.forEach(resp => {
+              parsingLog += `  • ${resp}\n`;
+            });
+          }
+          
+          if (extracted.benefits.length > 0) {
+            parsingLog += `\nBenefits (${extracted.benefits.length}):\n`;
+            extracted.benefits.forEach(ben => {
+              parsingLog += `  • ${ben}\n`;
+            });
+          }
+          
+          if (jobTitle && companyName && jobDescription) {
+            let companyId = roleCompanyService.getCompanyByName(companyName)?.id;
+            
+            if (!companyId) {
+              companyId = randomUUID() as RoleCompanyId;
+              roleCompanyService.createCompany({
+                id: companyId,
+                name: companyName,
+                website: null,
+              });
+              parsingLog += `[Database] Created company: ${companyName}\n`;
+            }
+            
+            let locationId: string | undefined;
+            if (jobLocationRaw) {
+              const locationParts = jobLocationRaw.split(',').map(p => p.trim());
+              const city = locationParts[0] || '';
+              const stateStr = locationParts[1] || '';
+              
+              if (city && stateStr !== null) {
+                const state = roleStateService.getStateByAbbreviation(stateStr);
+                
+                if (state !== null) {
+                  const existingLocation = roleLocationService.getLocationByCityAndState(city, state.id);
+                  
+                  if (existingLocation) {
+                    locationId = existingLocation.id;
+                  } else {
+                    locationId = randomUUID();
+                    roleLocationService.createLocation({
+                      id: locationId as RoleLocationId,
+                      city,
+                      locationState: state.id,
+                    });
+                    parsingLog += `[Database] Created location: ${city}, ${stateStr}\n`;
+                  }
+                } else {
+                  parsingLog += `[Database] State not found: ${stateStr}\n`;
+                }
+              }
+            }
+            
+            const existingListing = roleListingService.getListingByDataReceivedId(payload.dataReceivedId as DataReceivedId);
+            
+            let listingId: string;
+            
+            if (existingListing) {
+              listingId = existingListing.id as string;
+              
+              roleListingService.updateRoleListing(existingListing.id, {
+                companyId: companyId as RoleCompanyId,
+                title: jobTitle,
+                description: jobDescription,
+                location: locationId as RoleLocationId | undefined,
+                workArrangement: workArrangement,
+                capturedAt: Math.floor(new Date().valueOf() / 1000),
+              });
+              
+              roleLineItemsService.deleteLineItemsByListingId(existingListing.id);
+              
+              parsingLog += `[Database] Updated existing role listing: ${jobTitle}\n`;
+            } else {
+              listingId = randomUUID();
+              roleListingService.createRoleListing({
+                id: listingId as RoleListingId,
+                companyId: companyId as RoleCompanyId,
+                title: jobTitle,
+                description: jobDescription,
+                location: locationId as RoleLocationId | null,
+                workArrangement: workArrangement,
+                capturedAt: Math.floor(new Date().valueOf() / 1000),
+                dataReceivedId: payload.dataReceivedId as DataReceivedId,
+                status: "new",
+                appliedAt: null,
+              });
+              parsingLog += `[Database] Created role listing: ${jobTitle}\n`;
+            }
+            
+            const lineItemsToCreate = [
+              ...extracted.requirements.map(text => ({
+                id: randomUUID() as RoleLineItemsId,
+                listingId: listingId as RoleListingId,
+                description: text,
+                type: 'requirement' as const,
+              })),
+              ...extracted.nicetohave.map(text => ({
+                id: randomUUID() as RoleLineItemsId,
+                listingId: listingId as RoleListingId,
+                description: text,
+                type: 'nicetohave' as const,
+              })),
+              ...extracted.responsibilities.map(text => ({
+                id: randomUUID() as RoleLineItemsId,
+                listingId: listingId as RoleListingId,
+                description: text,
+                type: 'responsibility' as const,
+              })),
+              ...extracted.benefits.map(text => ({
+                id: randomUUID() as RoleLineItemsId,
+                listingId: listingId as RoleListingId,
+                description: text,
+                type: 'benefit' as const,
+              })),
+            ];
+            
+            if (lineItemsToCreate.length > 0) {
+              for (const item of lineItemsToCreate) {
+                roleLineItemsService.createLineItem(item);
+              }
+              parsingLog += `[Database] Created ${extracted.requirements.length} requirements, ${extracted.nicetohave.length} nice-to-haves, ${extracted.responsibilities.length} responsibilities, and ${extracted.benefits.length} benefits\n`;
+            }
+          }
+        }
+      } else if (url.hostname === "www.indeed.com") {
+        parsingLog += "[Indeed Parser] Parsing job posting...\n";
+
+        const { workArrangement, jobTitle, companyName, jobLocation: jobLocationRaw, jobDescription } = parseIndeedJob($);
+
+        parsingLog += `[Indeed Parser] Work Arrangement: ${workArrangement}\n`;
+        parsingLog += `[Indeed Parser] Job Title: ${jobTitle}\n`;
+        parsingLog += `[Indeed Parser] Company Name: ${companyName}\n`;
+        parsingLog += `[Indeed Parser] Job Location: ${jobLocationRaw}\n`;
+
+        if (jobDescription) {
+          const nodes = parseHtml(jobDescription);
           const sections = nodes.length > 0 ? parseVisualSections(nodes[0]) : [];
           const extracted = extractDescriptionDetails(sections);
           

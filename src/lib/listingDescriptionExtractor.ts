@@ -33,27 +33,15 @@ export function extractDescriptionDetails(sections: VisualSection[]): ExtractedD
     benefits: []
   };
 
-  const labelMap: Record<string, keyof ExtractedDescriptionDetails> = {
-    'Requirements': 'requirements',
-    'Qualifications': 'requirements',
-    'Nice to have': 'nicetohave',
-    'Preferred': 'nicetohave',
-    'Responsibilities': 'responsibilities',
-    'Benefits': 'benefits'
-  };
-
   const sortedSections = [...sections].sort((a, b) => {
-    const aLabel = a.label || '';
-    const bLabel = b.label || '';
-    return aLabel.localeCompare(bLabel);
+    const aType = a.lineItemType || '';
+    const bType = b.lineItemType || '';
+    return aType.localeCompare(bType);
   });
 
   for (const section of sortedSections) {
     if (!section.type || section.type === 'section') continue;
-    if (!section.label) continue;
-
-    const targetKey = labelMap[section.label];
-    if (!targetKey) continue;
+    if (!section.lineItemType) continue;
 
     const content = section.content.trim();
     if (!content) continue;
@@ -62,7 +50,7 @@ export function extractDescriptionDetails(sections: VisualSection[]): ExtractedD
       .map(line => line.trim())
       .filter(line => line.length > 0);
 
-    result[targetKey].push(...lines);
+    result[section.lineItemType].push(...lines);
   }
 
   return result;

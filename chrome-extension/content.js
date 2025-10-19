@@ -12,9 +12,7 @@ function extractJob() {
     
     // Indeed selectors  
     if (location.hostname.includes("indeed.com")) {
-      desc = document.querySelector(".jobsearch-jobDescriptionText") ||
-             document.querySelector("#jobDescriptionText") ||
-             document.querySelector(".jobsearch-JobComponent-description");
+      desc = document.querySelector("#job-full-details");
       selectorUsed = "indeed";
     }
     

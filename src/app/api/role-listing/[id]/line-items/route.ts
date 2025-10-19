@@ -7,13 +7,14 @@ import type { LineItemType } from "@/domain/entities/roleLineItems";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") as LineItemType | null;
 
-    const conditions = [eq(roleLineItems.listingId, params.id as RoleListingId)];
+    const conditions = [eq(roleLineItems.listingId, id as RoleListingId)];
     
     if (type) {
       conditions.push(eq(roleLineItems.type, type));
