@@ -2,6 +2,7 @@
 function extractJob() {
     let desc = null;
     let selectorUsed = "none";
+    let jobUrl = location.href;
     
     // LinkedIn selectors
     if (location.hostname.includes("linkedin.com")) {
@@ -14,6 +15,18 @@ function extractJob() {
     if (location.hostname.includes("indeed.com")) {
       desc = document.querySelector("#job-full-details");
       selectorUsed = "indeed";
+      
+      // Indeed displays jobs in a right panel on search results
+      // The selected job card has aria-pressed="true"
+      const selectedJob = document.querySelector('[data-jk][aria-pressed="true"]');
+      const jobKey = selectedJob?.getAttribute('data-jk');
+      
+      if (jobKey) {
+        jobUrl = `https://www.indeed.com/viewjob?jk=${jobKey}`;
+        console.log("Found Indeed job URL:", jobUrl);
+      } else {
+        console.warn("Could not find selected job with aria-pressed=true");
+      }
     }
     
     // Fallback
@@ -29,7 +42,7 @@ function extractJob() {
     console.log("Text length:", desc?.innerText?.length || 0);
   
     return {
-      url: location.href,
+      url: jobUrl,
       title: document.title,
       html: desc?.innerHTML || "",
       text: desc?.innerText || ""
