@@ -188,12 +188,21 @@ export interface VisualSection {
 export function parseVisualSections(root: HtmlNode): VisualSection[] {
   const sections: VisualSection[] = [];
   
-  const sectionKeywords = {
-    responsibilities: ['responsibilit', 'duties', 'what you', 'you will', 'day to day', 'role description', 'key responsibilit'],
-    requirements: ['requirement', 'qualification', 'must have', 'must-have', 'you have', 'experience', 'skills', 'what we'],
-    nicetohave: ['nice to have', 'nice-to-have', 'preferred', 'bonus', 'plus'],
-    benefits: ['benefit', 'we offer', 'perks', 'compensation', 'salary', 'package'],
+  // Unique keywords that only match one specific category
+  const uniqueKeywords = {
+    nicetohave: ['nice to have', 'nice-to-have', 'nice to hav', 'nice-to-hav'],
+    responsibilities: ['responsibilit', 'key responsibilit', 'duties', 'role description'],
+    requirements: ['requirement', 'qualification', 'must have', 'must-have'],
+    benefits: ['benefit', 'perks', 'compensation', 'salary', 'package'],
     about: ['about us', 'about the', 'who we are', 'our company', 'our team', 'company description'],
+  };
+  
+  // Non-unique keywords that might match multiple categories
+  const nonUniqueKeywords = {
+    nicetohave: ['preferred', 'bonus', 'plus'],
+    responsibilities: ['what you', 'you will', 'day to day'],
+    requirements: ['you have', 'experience', 'skills', 'what we'],
+    benefits: ['we offer'],
   };
 
   function extractText(node: HtmlNode): string {
@@ -221,6 +230,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
 
   function cleanSectionText(text: string): string {
     return text
+      .trim()
       .replace(/^\*\*\s*/, '')
       .replace(/\s*\*\*$/, '')
       .replace(/:\s*$/, '')
@@ -235,7 +245,8 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
       return { type: 'title', confidence: 0.9 };
     }
 
-    for (const [category, keywords] of Object.entries(sectionKeywords)) {
+    // First check unique keywords - if any match, use that category immediately
+    for (const [category, keywords] of Object.entries(uniqueKeywords)) {
       for (const keyword of keywords) {
         if (lowerText.includes(keyword)) {
           const lineItemType = ['requirements', 'responsibilities', 'nicetohave', 'benefits'].includes(category) 
@@ -250,6 +261,32 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
           };
         }
       }
+    }
+    
+    // No unique keyword matched - check non-unique keywords and pick longest match
+    let bestMatch: { category: string; keyword: string } | null = null;
+    
+    for (const [category, keywords] of Object.entries(nonUniqueKeywords)) {
+      for (const keyword of keywords) {
+        if (lowerText.includes(keyword)) {
+          if (!bestMatch || keyword.length > bestMatch.keyword.length) {
+            bestMatch = { category, keyword };
+          }
+        }
+      }
+    }
+    
+    if (bestMatch) {
+      const lineItemType = ['requirements', 'responsibilities', 'nicetohave', 'benefits'].includes(bestMatch.category) 
+        ? bestMatch.category as VisualSection['lineItemType']
+        : undefined;
+      
+      return {
+        type: 'section',
+        label: bestMatch.category.charAt(0).toUpperCase() + bestMatch.category.slice(1),
+        lineItemType,
+        confidence: 0.8
+      };
     }
 
     if (tag && ['ul', 'ol'].includes(tag)) {
@@ -294,6 +331,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
 
     const tag = node.tag?.toLowerCase();
 
+    // Check if this node itself is a section heading
     if (isSectionHeading(node)) {
       const text = extractText(node).trim();
       const classification = classifySection(text, tag);
@@ -305,7 +343,8 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
           node: node
         });
       }
-      return;
+      // Continue traversing children - don't return early
+      // This allows nested sections to be found (e.g., <p><b> inside a <div><b>)
     }
 
     if (tag === 'ul' || tag === 'ol') {

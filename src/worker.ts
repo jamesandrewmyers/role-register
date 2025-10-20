@@ -232,7 +232,7 @@ parentPort.on("message", async (eventId: string) => {
         parsingLog += `[Indeed Parser] Job Location: ${jobLocationRaw}\n`;
 
         if (jobDescription) {
-          const nodes = parseHtml(jobDescription);
+          const nodes = parseHtml("<div>" + jobDescription + "</div>");
           const sections = nodes.length > 0 ? parseVisualSections(nodes[0]) : [];
           const extracted = extractDescriptionDetails(sections);
           
