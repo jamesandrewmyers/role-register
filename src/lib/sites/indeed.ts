@@ -17,8 +17,10 @@ export function parseIndeedJob($: cheerio.CheerioAPI): IndeedJobData {
     jobDetailsText.indexOf("on-site") !== -1 || jobDetailsText.indexOf("onsite") !== -1 ? "on-site" : "unspecified";
 
   // Extract job title
-  const jobTitle = $("h1.jobsearch-JobInfoHeader-title").text().trim() || 
-                   $(".jobsearch-JobInfoHeader-title span").text().trim() || "";
+  let jobTitle = $("h1.jobsearch-JobInfoHeader-title").clone().children().remove().end().text().trim();
+  if (!jobTitle) {
+    jobTitle = $(".jobsearch-JobInfoHeader-title span").first().clone().children().remove().end().text().trim();
+  }
 
   // Extract company name
   const companyName = $("[data-company-name='true']").text().trim() ||
@@ -26,8 +28,7 @@ export function parseIndeedJob($: cheerio.CheerioAPI): IndeedJobData {
                       $(".jobsearch-JobInfoHeader-subtitle a").first().text().trim() || "";
 
   // Extract job location
-  const jobLocation = $("[data-testid='job-location']").text().trim() ||
-                      $(".jobsearch-JobInfoHeader-subtitle div").last().text().trim() || "";
+  const jobLocation = $("[data-testid='inlineHeader-companyLocation']").text().trim() || "";
 
   // Extract and format job description
   const jobDescriptionElement = $("#jobDescriptionText");

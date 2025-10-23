@@ -190,9 +190,9 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
   
   // Unique keywords that only match one specific category
   const uniqueKeywords = {
-    nicetohave: ['nice to have', 'nice-to-have', 'nice to hav', 'nice-to-hav'],
+    nicetohave: ['nice to have', 'nice-to-have', 'nice to hav', 'nice-to-hav', 'preferred'],
     responsibilities: ['responsibilit', 'key responsibilit', 'duties', 'role description'],
-    requirements: ['requirement', 'qualification', 'must have', 'must-have'],
+    requirements: [ 'must have', 'must-have'],
     benefits: ['benefit', 'perks', 'compensation', 'salary', 'package'],
     about: ['about us', 'about the', 'who we are', 'our company', 'our team', 'company description'],
   };
@@ -201,7 +201,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
   const nonUniqueKeywords = {
     nicetohave: ['preferred', 'bonus', 'plus'],
     responsibilities: ['what you', 'you will', 'day to day'],
-    requirements: ['you have', 'experience', 'skills', 'what we'],
+    requirements: ['requirement', 'qualification', 'you have', 'experience', 'skills', 'what we'],
     benefits: ['we offer'],
   };
 

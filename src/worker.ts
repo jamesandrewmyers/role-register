@@ -82,30 +82,30 @@ parentPort.on("message", async (eventId: string) => {
           
           if (extracted.requirements.length > 0) {
             parsingLog += `\nRequirements (${extracted.requirements.length}):\n`;
-            extracted.requirements.forEach(req => {
-              parsingLog += `  • ${req}\n`;
-            });
+            // extracted.requirements.forEach(req => {
+            //   parsingLog += `  • ${req}\n`;
+            // });
           }
           
           if (extracted.nicetohave.length > 0) {
             parsingLog += `\nNice to Have (${extracted.nicetohave.length}):\n`;
-            extracted.nicetohave.forEach(nth => {
-              parsingLog += `  • ${nth}\n`;
-            });
+            // extracted.nicetohave.forEach(nth => {
+            //   parsingLog += `  • ${nth}\n`;
+            // });
           }
           
           if (extracted.responsibilities.length > 0) {
             parsingLog += `\nResponsibilities (${extracted.responsibilities.length}):\n`;
-            extracted.responsibilities.forEach(resp => {
-              parsingLog += `  • ${resp}\n`;
-            });
+            // extracted.responsibilities.forEach(resp => {
+            //   parsingLog += `  • ${resp}\n`;
+            // });
           }
           
           if (extracted.benefits.length > 0) {
             parsingLog += `\nBenefits (${extracted.benefits.length}):\n`;
-            extracted.benefits.forEach(ben => {
-              parsingLog += `  • ${ben}\n`;
-            });
+            // extracted.benefits.forEach(ben => {
+            //   parsingLog += `  • ${ben}\n`;
+            // });
           }
           
           if (jobTitle && companyName && jobDescription) {
@@ -241,30 +241,30 @@ parentPort.on("message", async (eventId: string) => {
           
           if (extracted.requirements.length > 0) {
             parsingLog += `\nRequirements (${extracted.requirements.length}):\n`;
-            extracted.requirements.forEach(req => {
-              parsingLog += `  • ${req}\n`;
-            });
+            // extracted.requirements.forEach(req => {
+            //   parsingLog += `  • ${req}\n`;
+            // });
           }
           
           if (extracted.nicetohave.length > 0) {
             parsingLog += `\nNice to Have (${extracted.nicetohave.length}):\n`;
-            extracted.nicetohave.forEach(nth => {
-              parsingLog += `  • ${nth}\n`;
-            });
+            // extracted.nicetohave.forEach(nth => {
+            //   parsingLog += `  • ${nth}\n`;
+            // });
           }
           
           if (extracted.responsibilities.length > 0) {
             parsingLog += `\nResponsibilities (${extracted.responsibilities.length}):\n`;
-            extracted.responsibilities.forEach(resp => {
-              parsingLog += `  • ${resp}\n`;
-            });
+            // extracted.responsibilities.forEach(resp => {
+            //   parsingLog += `  • ${resp}\n`;
+            // });
           }
           
           if (extracted.benefits.length > 0) {
             parsingLog += `\nBenefits (${extracted.benefits.length}):\n`;
-            extracted.benefits.forEach(ben => {
-              parsingLog += `  • ${ben}\n`;
-            });
+            // extracted.benefits.forEach(ben => {
+            //   parsingLog += `  • ${ben}\n`;
+            // });
           }
           
           if (jobTitle && companyName && jobDescription) {
@@ -286,26 +286,24 @@ parentPort.on("message", async (eventId: string) => {
               const city = locationParts[0] || '';
               const stateStr = locationParts[1] || '';
               
-              if (city && stateStr !== null) {
-                const state = roleStateService.getStateByAbbreviation(stateStr);
+              const state = roleStateService.getStateByAbbreviation(stateStr);
+              
+              if (state !== null) {
+                const existingLocation = roleLocationService.getLocationByCityAndState(city, state.id);
                 
-                if (state !== null) {
-                  const existingLocation = roleLocationService.getLocationByCityAndState(city, state.id);
-                  
-                  if (existingLocation) {
-                    locationId = existingLocation.id;
-                  } else {
-                    locationId = randomUUID();
-                    roleLocationService.createLocation({
-                      id: locationId as RoleLocationId,
-                      city,
-                      locationState: state.id,
-                    });
-                    parsingLog += `[Database] Created location: ${city}, ${stateStr}\n`;
-                  }
+                if (existingLocation) {
+                  locationId = existingLocation.id;
                 } else {
-                  parsingLog += `[Database] State not found: ${stateStr}\n`;
+                  locationId = randomUUID();
+                  roleLocationService.createLocation({
+                    id: locationId as RoleLocationId,
+                    city,
+                    locationState: state.id,
+                  });
+                  parsingLog += `[Database] Created location: ${city}, ${stateStr}\n`;
                 }
+              } else {
+                parsingLog += `[Database] State not found: ${stateStr}\n`;
               }
             }
             
