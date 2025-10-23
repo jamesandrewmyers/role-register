@@ -39,7 +39,7 @@ export default function DataReceivedList({ items, onSelectItem }: DataReceivedLi
                 href={item.url} 
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-purple-300 text-sm hover:underline block truncate mb-1"
+                className="text-purple-300 text-sm hover:underline inline-block truncate mb-1 max-w-full"
                 onClick={(e) => e.stopPropagation()}
               >
                 {item.url}
@@ -48,7 +48,7 @@ export default function DataReceivedList({ items, onSelectItem }: DataReceivedLi
                 {new Date(Number(item.receivedAt) * 1000).toLocaleString()}
               </div>
               {item.processingNotes && (
-                <div className="mt-2 text-yellow-300 text-sm">{item.processingNotes}</div>
+                <div className="mt-2 text-yellow-300 text-sm break-words">{item.processingNotes}</div>
               )}
             </div>
           ))}
