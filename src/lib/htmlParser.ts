@@ -192,7 +192,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
   const uniqueKeywords = {
     nicetohave: ['nice to have', 'nice-to-have', 'nice to hav', 'nice-to-hav', 'preferred'],
     responsibilities: ['responsibilit', 'key responsibilit', 'duties', 'role description'],
-    requirements: [ 'must have', 'must-have'],
+    requirements: [ 'must have', 'must-have', 'requirement'],
     benefits: ['benefit', 'perks', 'compensation', 'salary', 'package'],
     about: ['about us', 'about the', 'who we are', 'our company', 'our team', 'company description'],
   };
@@ -201,7 +201,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
   const nonUniqueKeywords = {
     nicetohave: ['preferred', 'bonus', 'plus'],
     responsibilities: ['what you', 'you will', 'day to day'],
-    requirements: ['requirement', 'qualification', 'you have', 'experience', 'skills', 'what we'],
+    requirements: ['qualification', 'you have', 'experience', 'skills', 'what we'],
     benefits: ['we offer'],
   };
 
@@ -326,7 +326,58 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     return false;
   }
 
-  function traverse(node: HtmlNode) {
+  function hasListNearby(node: HtmlNode, parent: HtmlNode | null): boolean {
+    if (!parent || !parent.children) return false;
+    
+    const nodeIndex = parent.children.indexOf(node);
+    if (nodeIndex === -1) return false;
+    
+    function hasListDescendant(element: HtmlNode, depth: number = 0): boolean {
+      if (depth > 2) return false;
+      if (element.type === 'element' && (element.tag === 'ul' || element.tag === 'ol')) {
+        return true;
+      }
+      if (element.children) {
+        for (const child of element.children) {
+          if (hasListDescendant(child, depth + 1)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    
+    for (let i = nodeIndex + 1; i < Math.min(nodeIndex + 5, parent.children.length); i++) {
+      const sibling = parent.children[i];
+      if (hasListDescendant(sibling)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function isPlainTextSectionHeader(textNode: HtmlNode, parent: HtmlNode | null): boolean {
+    if (textNode.type !== 'text' || !textNode.content) return false;
+    
+    const text = textNode.content.trim();
+    
+    if (!text.endsWith(':')) return false;
+    if (text.length < 10 || text.length > 100) return false;
+    
+    const lowerText = text.toLowerCase();
+    const sectionKeywords = [
+      'experience', 'qualification', 'requirement', 'skill', 'responsibilit',
+      'duties', 'benefit', 'offer', 'perks', 'about', 'what you', 'nice to have',
+      'preferred', 'must have'
+    ];
+    
+    const hasKeyword = sectionKeywords.some(keyword => lowerText.includes(keyword));
+    if (!hasKeyword) return false;
+    
+    return hasListNearby(textNode, parent);
+  }
+
+  function traverse(node: HtmlNode, parent: HtmlNode | null = null) {
     if (node.type !== 'element' || !node.children) return;
 
     const tag = node.tag?.toLowerCase();
@@ -345,6 +396,23 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
       }
       // Continue traversing children - don't return early
       // This allows nested sections to be found (e.g., <p><b> inside a <div><b>)
+    }
+
+    // Check for plain text section headers (no bold/strong styling)
+    for (const child of node.children) {
+      if (isPlainTextSectionHeader(child, node)) {
+        const text = child.content!.trim();
+        const classification = classifySection(text, tag);
+        
+        if (classification.confidence >= 0.5) {
+          sections.push({
+            ...classification,
+            content: text,
+            node: child,
+            confidence: Math.max(0.7, classification.confidence - 0.1)
+          });
+        }
+      }
     }
 
     if (tag === 'ul' || tag === 'ol') {
@@ -366,7 +434,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     }
 
     for (const child of node.children) {
-      traverse(child);
+      traverse(child, node);
     }
   }
 
