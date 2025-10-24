@@ -1,15 +1,81 @@
 "use client";
 
-import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
+import { useState, useRef, useEffect } from "react";
 
-type DataReceived = DataReceivedDTO;
+export interface DataReceivedWithListing {
+  id: string;
+  url: string;
+  title: string;
+  html: string;
+  text: string;
+  receivedAt: number;
+  processed: string;
+  processingNotes?: string;
+  roleListing?: {
+    title: string;
+    companyName: string;
+  };
+}
 
 interface DataReceivedListProps {
-  items: DataReceived[];
-  onSelectItem: (item: DataReceived) => void;
+  items: DataReceivedWithListing[];
+  onSelectItem: (item: DataReceivedWithListing) => void;
 }
 
 export default function DataReceivedList({ items, onSelectItem }: DataReceivedListProps) {
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleProcessedMouseEnter = (item: DataReceivedWithListing, event: React.MouseEvent<HTMLSpanElement>) => {
+    event.stopPropagation();
+    
+    if (!item.roleListing) return;
+    
+    // Get the parent div (the item container) for positioning
+    const parentDiv = event.currentTarget.closest('.bg-white\\/5') as HTMLElement;
+    if (parentDiv) {
+      const rect = parentDiv.getBoundingClientRect();
+      // Position popup's top-right corner at component's top-right corner
+      setPopupPosition({ x: rect.right, y: rect.top });
+    }
+    setHoveredItem(item.id);
+    
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    hoverTimeoutRef.current = setTimeout(() => {
+      setShowPopup(true);
+    }, 500);
+  };
+
+  const handleProcessedMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    
+    if (!showPopup) {
+      setHoveredItem(null);
+    }
+  };
+
+  const handlePopupMouseLeave = () => {
+    setShowPopup(false);
+    setHoveredItem(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const hoveredItemData = items.find(i => i.id === hoveredItem);
   return (
     <>
       <h2 className="text-2xl font-bold text-white mb-4">Data Received</h2>
@@ -31,6 +97,8 @@ export default function DataReceivedList({ items, onSelectItem }: DataReceivedLi
                       ? "bg-red-500/20 text-red-300 border-red-500/30"
                       : "bg-gray-500/20 text-gray-300 border-gray-500/30"
                   }`}
+                  onMouseEnter={item.processed === "true" && item.roleListing ? (e) => handleProcessedMouseEnter(item, e) : undefined}
+                  onMouseLeave={item.processed === "true" && item.roleListing ? handleProcessedMouseLeave : undefined}
                 >
                   {item.processed === "true" ? "Processed" : item.processed === "failed" ? "Failed" : "Pending"}
                 </span>
@@ -55,6 +123,20 @@ export default function DataReceivedList({ items, onSelectItem }: DataReceivedLi
         </div>
       ) : (
         <div className="text-gray-400 text-center py-8">No data received yet</div>
+      )}
+
+      {showPopup && hoveredItemData?.roleListing && (
+        <div
+          className="fixed z-50 bg-gradient-to-br from-slate-800 to-purple-900 border border-purple-400/30 rounded-lg shadow-2xl p-4"
+          style={{
+            right: `${window.innerWidth - popupPosition.x}px`,
+            top: `${popupPosition.y}px`,
+          }}
+          onMouseLeave={handlePopupMouseLeave}
+        >
+          <h1 className="text-2xl font-bold text-white mb-1">{hoveredItemData.roleListing.title}</h1>
+          <p className="text-lg text-purple-300">{hoveredItemData.roleListing.companyName}</p>
+        </div>
       )}
     </>
   );

@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react";
 import TableViewer from "./TableViewer";
 import RestoreBackupModal from "./RestoreBackupModal";
-import DataReceivedList from "./DataReceivedList";
+import DataReceivedList, { type DataReceivedWithListing } from "./DataReceivedList";
 import EventInfoList from "./EventInfoList";
 import DataReceivedDetails from "./DataReceivedDetails";
 import EventInfoDetails from "./EventInfoDetails";
-import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
 import type { EventInfoDTO } from "@/dto/eventInfo.dto";
 
 interface AdminDialogProps {
@@ -27,9 +26,9 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
   const [restoreModalOpen, setRestoreModalOpen] = useState(false);
   const [storageLocation, setStorageLocation] = useState<string>("");
   const [monitoringTab, setMonitoringTab] = useState<MonitoringTabType>("dataReceived");
-  const [dataReceived, setDataReceived] = useState<DataReceivedDTO[]>([]);
+  const [dataReceived, setDataReceived] = useState<DataReceivedWithListing[]>([]);
   const [eventInfo, setEventInfo] = useState<EventInfoDTO[]>([]);
-  const [selectedDataReceived, setSelectedDataReceived] = useState<DataReceivedDTO | null>(null);
+  const [selectedDataReceived, setSelectedDataReceived] = useState<DataReceivedWithListing | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventInfoDTO | null>(null);
 
   useEffect(() => {
@@ -61,10 +60,20 @@ export default function AdminDialog({ isOpen, onClose }: AdminDialogProps) {
 
     async function fetchDashboard() {
       try {
-        const res = await fetch("/api/dashboard");
-        const data = await res.json();
-        setDataReceived(data.dataReceived || []);
-        setEventInfo(data.eventInfo || []);
+        const [dataReceivedRes, eventInfoRes] = await Promise.all([
+          fetch("/api/admin/data-received"),
+          fetch("/api/admin/event-info")
+        ]);
+        
+        if (dataReceivedRes.ok) {
+          const data = await dataReceivedRes.json();
+          setDataReceived(data || []);
+        }
+        
+        if (eventInfoRes.ok) {
+          const data = await eventInfoRes.json();
+          setEventInfo(data || []);
+        }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       }
