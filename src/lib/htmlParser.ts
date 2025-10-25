@@ -192,7 +192,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
   const uniqueKeywords = {
     nicetohave: ['nice to have', 'nice-to-have', 'nice to hav', 'nice-to-hav', 'preferred'],
     responsibilities: ['responsibilit', 'key responsibilit', 'duties', 'role description'],
-    requirements: [ 'must have', 'must-have', 'requirement'],
+    requirements: ['must have', 'must-have', 'requirement', 'your experience should include'],
     benefits: ['benefit', 'perks', 'compensation', 'salary', 'package'],
     about: ['about us', 'about the', 'who we are', 'our company', 'our team', 'company description'],
   };
@@ -419,15 +419,34 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
       const items = node.children.filter(child => child.tag === 'li');
       if (items.length > 0) {
         const listText = items.map(extractText).join('\n');
-        const prevSection = sections[sections.length - 1];
+        
+        // Find the nearest preceding section header that doesn't already have a list
+        // Walk backwards through sections, skip lists, and find first section/title that:
+        // 1. Is a section or title type
+        // 2. Is NOT immediately followed by another list in the sections array
+        let headerSection = null;
+        for (let i = sections.length - 1; i >= 0; i--) {
+          const section = sections[i];
+          if (section.type === 'section' || section.type === 'title') {
+            // Check if the next section after this one is a list
+            const nextSection = sections[i + 1];
+            if (nextSection && nextSection.type === 'list') {
+              // This header already has a list, keep looking
+              continue;
+            }
+            // Found a header without a list following it
+            headerSection = section;
+            break;
+          }
+        }
         
         sections.push({
           type: 'list',
           content: listText,
           node: node,
           confidence: 0.7,
-          label: prevSection?.label,
-          lineItemType: prevSection?.lineItemType
+          label: headerSection?.label,
+          lineItemType: headerSection?.lineItemType
         });
       }
       return;
