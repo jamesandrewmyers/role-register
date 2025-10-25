@@ -190,7 +190,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
   
   // Unique keywords that only match one specific category
   const uniqueKeywords = {
-    nicetohave: ['nice to have', 'nice-to-have', 'nice to hav', 'nice-to-hav', 'preferred'],
+    nicetohave: ['nice to have', 'nice-to-have', 'nice to hav', 'nice-to-hav', 'preferred', 'recommended'],
     responsibilities: ['responsibilit', 'key responsibilit', 'duties', 'role description'],
     requirements: ['must have', 'must-have', 'requirement', 'your experience should include'],
     benefits: ['benefit', 'perks', 'compensation', 'salary', 'package'],
@@ -221,7 +221,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     for (const child of node.children) {
       if (child.type === 'text') {
         text += child.content || '';
-      } else if (child.type === 'element' && (child.tag === 'strong' || child.tag === 'b')) {
+      } else if (child.type === 'element' && (child.tag === 'strong' || child.tag === 'b' || child.tag === 'em' || child.tag === 'i')) {
         text += extractText(child);
       }
     }
@@ -314,12 +314,22 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     return hasStrongChild;
   }
 
+  function isEmphasisWrapped(node: HtmlNode): boolean {
+    if (!node.children || node.children.length === 0) return false;
+    
+    const hasEmChild = node.children.some(child => 
+      child.type === 'element' && (child.tag === 'em' || child.tag === 'i')
+    );
+    
+    return hasEmChild;
+  }
+
   function isSectionHeading(node: HtmlNode): boolean {
     const tag = node.tag?.toLowerCase();
     if (tag && ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
       return true;
     }
-    if ((tag === 'p' || tag === 'div' || tag === 'span') && isStrongWrapped(node)) {
+    if ((tag === 'p' || tag === 'div' || tag === 'span') && (isStrongWrapped(node) || isEmphasisWrapped(node))) {
       const text = extractDirectText(node);
       return text.length > 5 && text.length < 150;
     }
@@ -377,7 +387,28 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     return hasListNearby(textNode, parent);
   }
 
+  let currentHeader: VisualSection | null = null;
+
   function traverse(node: HtmlNode, parent: HtmlNode | null = null) {
+    // Check if this text node is a plain text section header
+    if (node.type === 'text' && parent && isPlainTextSectionHeader(node, parent)) {
+      const text = node.content!.trim();
+      const parentTag = parent.tag?.toLowerCase();
+      const classification = classifySection(text, parentTag);
+      
+      if (classification.confidence >= 0.5) {
+        const newSection = {
+          ...classification,
+          content: text,
+          node: node,
+          confidence: Math.max(0.7, classification.confidence - 0.1)
+        };
+        sections.push(newSection);
+        currentHeader = newSection;
+      }
+      return;
+    }
+    
     if (node.type !== 'element' || !node.children) return;
 
     const tag = node.tag?.toLowerCase();
@@ -388,31 +419,16 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
       const classification = classifySection(text, tag);
       
       if (classification.confidence >= 0.5) {
-        sections.push({
+        const newSection = {
           ...classification,
           content: text,
           node: node
-        });
+        };
+        sections.push(newSection);
+        currentHeader = newSection;
       }
       // Continue traversing children - don't return early
       // This allows nested sections to be found (e.g., <p><b> inside a <div><b>)
-    }
-
-    // Check for plain text section headers (no bold/strong styling)
-    for (const child of node.children) {
-      if (isPlainTextSectionHeader(child, node)) {
-        const text = child.content!.trim();
-        const classification = classifySection(text, tag);
-        
-        if (classification.confidence >= 0.5) {
-          sections.push({
-            ...classification,
-            content: text,
-            node: child,
-            confidence: Math.max(0.7, classification.confidence - 0.1)
-          });
-        }
-      }
     }
 
     if (tag === 'ul' || tag === 'ol') {
@@ -420,33 +436,13 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
       if (items.length > 0) {
         const listText = items.map(extractText).join('\n');
         
-        // Find the nearest preceding section header that doesn't already have a list
-        // Walk backwards through sections, skip lists, and find first section/title that:
-        // 1. Is a section or title type
-        // 2. Is NOT immediately followed by another list in the sections array
-        let headerSection = null;
-        for (let i = sections.length - 1; i >= 0; i--) {
-          const section = sections[i];
-          if (section.type === 'section' || section.type === 'title') {
-            // Check if the next section after this one is a list
-            const nextSection = sections[i + 1];
-            if (nextSection && nextSection.type === 'list') {
-              // This header already has a list, keep looking
-              continue;
-            }
-            // Found a header without a list following it
-            headerSection = section;
-            break;
-          }
-        }
-        
         sections.push({
           type: 'list',
           content: listText,
           node: node,
           confidence: 0.7,
-          label: headerSection?.label,
-          lineItemType: headerSection?.lineItemType
+          label: currentHeader?.label,
+          lineItemType: currentHeader?.lineItemType
         });
       }
       return;
