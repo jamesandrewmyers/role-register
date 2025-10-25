@@ -110,6 +110,15 @@ export function createTestDb() {
       updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
     );
 
+    CREATE TABLE IF NOT EXISTS value_mapping (
+      id TEXT PRIMARY KEY,
+      value_name TEXT NOT NULL,
+      value_source TEXT NOT NULL,
+      value_type TEXT NOT NULL,
+      value_entity TEXT NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+    );
+
     PRAGMA foreign_keys = ON;
   `);
 

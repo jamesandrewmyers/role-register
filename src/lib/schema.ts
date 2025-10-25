@@ -150,3 +150,15 @@ export const settings = sqliteTable("settings", {
   value: text("value").notNull(),
   updatedAt: integer("updated_at").notNull().default(sql`(strftime('%s','now'))`),
 });
+
+// -----------------------------
+// value_mapping
+// -----------------------------
+export const valueMapping = sqliteTable("value_mapping", {
+  id: text("id").primaryKey(), // UUID
+  valueName: text("value_name").notNull(), // e.g. "workArrangement", "eventType"
+  valueSource: text("value_source").notNull(), // e.g. "linkedin", "indeed", "generic"
+  valueType: text("value_type").notNull(), // e.g. "string", "enum", "boolean"
+  valueEntity: text("value_entity").notNull(), // e.g. "roleListing", "roleEvent"
+  createdAt: integer("created_at").notNull().default(sql`(strftime('%s','now'))`),
+});
