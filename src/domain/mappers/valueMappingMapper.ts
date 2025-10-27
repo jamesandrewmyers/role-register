@@ -7,11 +7,14 @@ export function toDomain(
 ): ValueMapping {
   return {
     id: dbResult.id as ValueMappingId,
-    valueName: dbResult.valueName,
-    valueSource: dbResult.valueSource,
-    valueType: dbResult.valueType,
+    valueSite: dbResult.valueSite,
     valueEntity: dbResult.valueEntity,
+    valueEntityProperty: dbResult.valueEntityProperty,
+    cssSelector: dbResult.cssSelector,
+    selectorOrder: dbResult.selectorOrder,
+    selectorDescription: dbResult.selectorDescription || undefined,
     createdAt: dbResult.createdAt,
+    updatedAt: dbResult.updatedAt || undefined,
   };
 }
 

@@ -15,63 +15,70 @@ describe('valueMappingMapper', () => {
     it('should convert DB row to domain entity', () => {
       const mappingRow = db.insert(valueMapping).values({
         id: 'mapping-1',
-        valueName: 'workArrangement',
-        valueSource: 'linkedin',
-        valueType: 'enum',
+        valueSite: 'linkedin.com',
         valueEntity: 'roleListing',
+        valueEntityProperty: 'title',
+        cssSelector: 'h1[data-test-id="top-card-title"]',
+        selectorOrder: 1,
         createdAt: 1704067200,
       }).returning().get();
 
       const result = valueMappingMapper.toDomain(mappingRow);
 
       expect(result.id).toBe('mapping-1');
-      expect(result.valueName).toBe('workArrangement');
-      expect(result.valueSource).toBe('linkedin');
-      expect(result.valueType).toBe('enum');
+      expect(result.valueSite).toBe('linkedin.com');
       expect(result.valueEntity).toBe('roleListing');
+      expect(result.valueEntityProperty).toBe('title');
+      expect(result.cssSelector).toBe('h1[data-test-id="top-card-title"]');
+      expect(result.selectorOrder).toBe(1);
       expect(result.createdAt).toBe(1704067200);
     });
 
-    it('should handle different value mapping types', () => {
+    it('should handle different entity properties', () => {
       const mappingRow = db.insert(valueMapping).values({
         id: 'mapping-2',
-        valueName: 'eventType',
-        valueSource: 'indeed',
-        valueType: 'string',
-        valueEntity: 'roleEvent',
+        valueSite: 'indeed.com',
+        valueEntity: 'roleLocation',
+        valueEntityProperty: 'city',
+        cssSelector: '[data-testid="inlineHeader-companyLocation"]',
+        selectorOrder: 1,
         createdAt: 1704067300,
       }).returning().get();
 
       const result = valueMappingMapper.toDomain(mappingRow);
 
-      expect(result.valueName).toBe('eventType');
-      expect(result.valueSource).toBe('indeed');
-      expect(result.valueType).toBe('string');
-      expect(result.valueEntity).toBe('roleEvent');
+      expect(result.valueSite).toBe('indeed.com');
+      expect(result.valueEntity).toBe('roleLocation');
+      expect(result.valueEntityProperty).toBe('city');
+      expect(result.cssSelector).toBe('[data-testid="inlineHeader-companyLocation"]');
     });
 
-    it('should handle generic source values', () => {
+    it('should handle optional selector description', () => {
       const mappingRow = db.insert(valueMapping).values({
         id: 'mapping-3',
-        valueName: 'status',
-        valueSource: 'generic',
-        valueType: 'enum',
+        valueSite: 'indeed.com',
         valueEntity: 'roleListing',
+        valueEntityProperty: 'description',
+        cssSelector: 'div#jobDescriptionText',
+        selectorOrder: 1,
+        selectorDescription: 'Primary Indeed job description selector',
         createdAt: 1704067400,
       }).returning().get();
 
       const result = valueMappingMapper.toDomain(mappingRow);
 
-      expect(result.valueSource).toBe('generic');
+      expect(result.selectorDescription).toBe('Primary Indeed job description selector');
+      expect(result.cssSelector).toBe('div#jobDescriptionText');
     });
 
     it('should preserve type safety with branded ID', () => {
       const mappingRow = db.insert(valueMapping).values({
         id: 'mapping-4',
-        valueName: 'testValue',
-        valueSource: 'test',
-        valueType: 'boolean',
-        valueEntity: 'test',
+        valueSite: 'test.com',
+        valueEntity: 'roleListing',
+        valueEntityProperty: 'testProperty',
+        cssSelector: '.test-selector',
+        selectorOrder: 1,
         createdAt: 1704067500,
       }).returning().get();
 
@@ -87,29 +94,31 @@ describe('valueMappingMapper', () => {
     it('should convert array of DB rows', () => {
       const mapping1 = db.insert(valueMapping).values({
         id: 'mapping-5',
-        valueName: 'valueName1',
-        valueSource: 'source1',
-        valueType: 'type1',
-        valueEntity: 'entity1',
+        valueSite: 'indeed.com',
+        valueEntity: 'roleListing',
+        valueEntityProperty: 'title',
+        cssSelector: 'h1.selector1',
+        selectorOrder: 1,
         createdAt: 1704067600,
       }).returning().get();
 
       const mapping2 = db.insert(valueMapping).values({
         id: 'mapping-6',
-        valueName: 'valueName2',
-        valueSource: 'source2',
-        valueType: 'type2',
-        valueEntity: 'entity2',
+        valueSite: 'linkedin.com',
+        valueEntity: 'roleListing',
+        valueEntityProperty: 'title',
+        cssSelector: 'h1.selector2',
+        selectorOrder: 1,
         createdAt: 1704067700,
       }).returning().get();
 
       const results = valueMappingMapper.toDomainMany([mapping1, mapping2]);
 
       expect(results).toHaveLength(2);
-      expect(results[0].valueName).toBe('valueName1');
-      expect(results[0].valueSource).toBe('source1');
-      expect(results[1].valueName).toBe('valueName2');
-      expect(results[1].valueSource).toBe('source2');
+      expect(results[0].cssSelector).toBe('h1.selector1');
+      expect(results[0].valueSite).toBe('indeed.com');
+      expect(results[1].cssSelector).toBe('h1.selector2');
+      expect(results[1].valueSite).toBe('linkedin.com');
     });
 
     it('should handle empty array', () => {
@@ -120,27 +129,29 @@ describe('valueMappingMapper', () => {
     it('should handle single item array', () => {
       const mapping = db.insert(valueMapping).values({
         id: 'mapping-7',
-        valueName: 'singleMapping',
-        valueSource: 'source',
-        valueType: 'type',
-        valueEntity: 'entity',
+        valueSite: 'indeed.com',
+        valueEntity: 'roleListing',
+        valueEntityProperty: 'title',
+        cssSelector: 'h1.job-title',
+        selectorOrder: 1,
         createdAt: 1704067800,
       }).returning().get();
 
       const results = valueMappingMapper.toDomainMany([mapping]);
 
       expect(results).toHaveLength(1);
-      expect(results[0].valueName).toBe('singleMapping');
+      expect(results[0].cssSelector).toBe('h1.job-title');
     });
 
     it('should preserve all properties in batch conversion', () => {
       const mappings = Array.from({ length: 5 }, (_, i) => 
         db.insert(valueMapping).values({
           id: `mapping-batch-${i}`,
-          valueName: `name-${i}`,
-          valueSource: `source-${i}`,
-          valueType: `type-${i}`,
-          valueEntity: `entity-${i}`,
+          valueSite: `site-${i}.com`,
+          valueEntity: 'roleListing',
+          valueEntityProperty: `property-${i}`,
+          cssSelector: `.selector-${i}`,
+          selectorOrder: 1 + i,
           createdAt: 1704067900 + i,
         }).returning().get()
       );
@@ -149,10 +160,10 @@ describe('valueMappingMapper', () => {
 
       expect(results).toHaveLength(5);
       results.forEach((result, i) => {
-        expect(result.valueName).toBe(`name-${i}`);
-        expect(result.valueSource).toBe(`source-${i}`);
-        expect(result.valueType).toBe(`type-${i}`);
-        expect(result.valueEntity).toBe(`entity-${i}`);
+        expect(result.valueSite).toBe(`site-${i}.com`);
+        expect(result.valueEntityProperty).toBe(`property-${i}`);
+        expect(result.cssSelector).toBe(`.selector-${i}`);
+        expect(result.selectorOrder).toBe(1 + i);
       });
     });
   });

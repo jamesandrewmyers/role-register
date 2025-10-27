@@ -156,9 +156,12 @@ export const settings = sqliteTable("settings", {
 // -----------------------------
 export const valueMapping = sqliteTable("value_mapping", {
   id: text("id").primaryKey(), // UUID
-  valueName: text("value_name").notNull(), // e.g. "workArrangement", "eventType"
-  valueSource: text("value_source").notNull(), // e.g. "linkedin", "indeed", "generic"
-  valueType: text("value_type").notNull(), // e.g. "string", "enum", "boolean"
-  valueEntity: text("value_entity").notNull(), // e.g. "roleListing", "roleEvent"
+  valueSite: text("value_site").notNull(), // e.g. "linkedin.com", "indeed.com"
+  valueEntity: text("value_entity").notNull(), // e.g. "roleListing", "roleEvent", "roleLocation"
+  valueEntityProperty: text("value_entity_property").notNull(), // e.g. "title", "description", "city"
+  cssSelector: text("css_selector").notNull(), // e.g. "h1.jobsearch-JobInfoHeader-title", "[data-testid='location']"
+  selectorOrder: integer("selector_order").notNull(), // Priority order (1 = first to try, 2 = fallback, etc.)
+  selectorDescription: text("selector_description"), // Optional human-friendly description
   createdAt: integer("created_at").notNull().default(sql`(strftime('%s','now'))`),
+  updatedAt: integer("updated_at"),
 });

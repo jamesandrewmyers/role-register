@@ -112,11 +112,14 @@ export function createTestDb() {
 
     CREATE TABLE IF NOT EXISTS value_mapping (
       id TEXT PRIMARY KEY,
-      value_name TEXT NOT NULL,
-      value_source TEXT NOT NULL,
-      value_type TEXT NOT NULL,
+      value_site TEXT NOT NULL,
       value_entity TEXT NOT NULL,
-      created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+      value_entity_property TEXT NOT NULL,
+      css_selector TEXT NOT NULL,
+      selector_order INTEGER NOT NULL,
+      selector_description TEXT,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      updated_at INTEGER
     );
 
     PRAGMA foreign_keys = ON;
