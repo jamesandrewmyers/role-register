@@ -6,11 +6,58 @@ import { parseHtml, type HtmlNode } from "@/lib/htmlParser";
 interface HtmlViewerProps {
   html: string;
   onClose: () => void;
+  onMapElement?: (selector: string) => void;
+}
+
+interface ContextMenu {
+  x: number;
+  y: number;
+  selector: string;
+  visible: boolean;
 }
 
 const globalFirstMatch = { found: false };
 
-function HtmlNodeView({ node, depth = 0, searchTerm = '', firstMatchTracker = globalFirstMatch }: { node: HtmlNode; depth?: number; searchTerm?: string; firstMatchTracker?: { found: boolean } }) {
+/**
+ * Generate a CSS selector for an HTML element
+ * Priority: id > class > data-testid > tag
+ */
+function generateSelector(node: HtmlNode): string {
+  if (node.type !== 'element' || !node.tag) return '';
+  
+  let selector = node.tag;
+  
+  if (node.attributes?.id) {
+    return `#${node.attributes.id}`;
+  }
+  
+  if (node.attributes?.class) {
+    const classes = node.attributes.class.split(' ').slice(0, 2).join('.');
+    return `${node.tag}.${classes}`;
+  }
+  
+  if (node.attributes?.['data-testid']) {
+    return `${node.tag}[data-testid="${node.attributes['data-testid']}"]`;
+  }
+  
+  return selector;
+}
+
+function HtmlNodeView({ 
+  node, 
+  depth = 0, 
+  searchTerm = '', 
+  firstMatchTracker = globalFirstMatch,
+  onElementContextMenu,
+  selectedSelector,
+}: { 
+  node: HtmlNode; 
+  depth?: number; 
+  searchTerm?: string; 
+  firstMatchTracker?: { found: boolean };
+  onElementContextMenu?: (selector: string, x: number, y: number) => void;
+  selectedSelector?: string;
+}) {
   const [collapsed, setCollapsed] = useState(false);
   const indent = depth * 20;
 
@@ -60,12 +107,19 @@ function HtmlNodeView({ node, depth = 0, searchTerm = '', firstMatchTracker = gl
           .join(' ')
       : '';
 
+    const selector = generateSelector(node);
+    const isSelected = selector === selectedSelector;
+
     return (
       <div>
         <div 
           style={{ marginLeft: `${indent}px` }} 
-          className="text-green-400 text-sm py-0.5 font-mono hover:bg-gray-800/50 cursor-pointer"
+          className={`text-green-400 text-sm py-0.5 font-mono hover:bg-gray-800/50 cursor-pointer ${isSelected ? 'bg-purple-900/50 highlight' : ''}`}
           onClick={() => hasChildren && setCollapsed(!collapsed)}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            onElementContextMenu?.(selector, e.clientX, e.clientY);
+          }}
         >
           {hasChildren && (
             <span className="inline-block w-4 text-purple-400 font-bold">
@@ -81,7 +135,15 @@ function HtmlNodeView({ node, depth = 0, searchTerm = '', firstMatchTracker = gl
         {hasChildren && !collapsed && (
           <>
             {node.children!.map((child, idx) => (
-              <HtmlNodeView key={idx} node={child} depth={depth + 1} searchTerm={searchTerm} firstMatchTracker={firstMatchTracker} />
+              <HtmlNodeView 
+                key={idx} 
+                node={child} 
+                depth={depth + 1} 
+                searchTerm={searchTerm} 
+                firstMatchTracker={firstMatchTracker}
+                onElementContextMenu={onElementContextMenu}
+                selectedSelector={selectedSelector}
+              />
             ))}
             <div style={{ marginLeft: `${indent}px` }} className="text-blue-400 text-sm py-0.5 font-mono">
               &lt;/{searchTerm ? highlightText(node.tag) : node.tag}&gt;
@@ -95,13 +157,15 @@ function HtmlNodeView({ node, depth = 0, searchTerm = '', firstMatchTracker = gl
   return null;
 }
 
-export default function HtmlViewer({ html, onClose }: HtmlViewerProps) {
+export default function HtmlViewer({ html, onClose, onMapElement }: HtmlViewerProps) {
   const nodes = parseHtml(html);
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [renderKey, setRenderKey] = useState(0);
   const [showSearch, setShowSearch] = useState(false);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [contextMenu, setContextMenu] = useState<ContextMenu>({ x: 0, y: 0, selector: '', visible: false });
+  const [selectedSelector, setSelectedSelector] = useState<string>();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -147,6 +211,36 @@ export default function HtmlViewer({ html, onClose }: HtmlViewerProps) {
     }
   };
 
+  const handleContextMenu = (selector: string, x: number, y: number) => {
+    setContextMenu({ x, y, selector, visible: true });
+    setSelectedSelector(selector);
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu({ ...contextMenu, visible: false });
+  };
+
+  const handleMapElement = () => {
+    if (onMapElement && contextMenu.selector) {
+      onMapElement(contextMenu.selector);
+    }
+    closeContextMenu();
+  };
+
+  const handleCopySelector = async () => {
+    try {
+      await navigator.clipboard.writeText(contextMenu.selector);
+      closeContextMenu();
+    } catch (err) {
+      console.error('Failed to copy selector:', err);
+    }
+  };
+
+  const handleInspect = () => {
+    // Highlight the element
+    closeContextMenu();
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
@@ -154,11 +248,15 @@ export default function HtmlViewer({ html, onClose }: HtmlViewerProps) {
         setShowSearch(true);
         setTimeout(() => searchInputRef.current?.focus(), 0);
       }
-      if (e.key === 'Escape' && showSearch) {
-        setShowSearch(false);
-        setSearchInput('');
-        setSearchTerm('');
-        setCurrentMatchIndex(0);
+      if (e.key === 'Escape') {
+        if (showSearch) {
+          setShowSearch(false);
+          setSearchInput('');
+          setSearchTerm('');
+          setCurrentMatchIndex(0);
+        } else if (contextMenu.visible) {
+          closeContextMenu();
+        }
       }
       if (e.key === 'Enter' && showSearch && searchTerm) {
         e.preventDefault();
@@ -166,9 +264,20 @@ export default function HtmlViewer({ html, onClose }: HtmlViewerProps) {
       }
     };
 
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (contextMenu.visible && !target.closest('[role="menu"]')) {
+        closeContextMenu();
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSearch, searchTerm, currentMatchIndex]);
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showSearch, searchTerm, currentMatchIndex, contextMenu.visible]);
 
   return (
     <div
@@ -223,9 +332,45 @@ export default function HtmlViewer({ html, onClose }: HtmlViewerProps) {
         )}
         <div ref={contentRef} className="p-6 overflow-y-auto flex-1 bg-gray-950" key={renderKey}>
           {nodes.map((node, idx) => (
-            <HtmlNodeView key={idx} node={node} searchTerm={searchTerm} firstMatchTracker={firstMatchTrackerRef.current} />
+            <HtmlNodeView 
+              key={idx} 
+              node={node} 
+              searchTerm={searchTerm} 
+              firstMatchTracker={firstMatchTrackerRef.current}
+              onElementContextMenu={handleContextMenu}
+              selectedSelector={selectedSelector}
+            />
           ))}
         </div>
+
+        {/* Context Menu */}
+        {contextMenu.visible && (
+          <div
+            role="menu"
+            className="fixed bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-[70]"
+            style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={handleMapElement}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-white text-sm first:rounded-t-lg"
+            >
+              Map This Element
+            </button>
+            <button
+              onClick={handleCopySelector}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-white text-sm border-t border-gray-600"
+            >
+              Copy Selector
+            </button>
+            <button
+              onClick={handleInspect}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-white text-sm border-t border-gray-600 last:rounded-b-lg"
+            >
+              Inspect
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
