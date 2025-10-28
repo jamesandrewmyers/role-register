@@ -140,12 +140,11 @@ export default function AdminPage() {
         <section className="flex-1 overflow-hidden">
           <h2 className="text-2xl font-semibold mb-4">HTML Viewer</h2>
           {showHtmlViewer && (
-            <div className="h-full overflow-hidden">
+            <div className="border border-gray-300 rounded-lg p-4 h-full overflow-auto">
               <HtmlViewer
                 html={sampleHtml}
                 onClose={handleCloseViewer}
                 onMapElement={handleMapElement}
-                isModal={false}
               />
             </div>
           )}
