@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import HtmlViewer from "./HtmlViewer";
+import ValueMappingWorkspace from "./ValueMappingWorkspace";
 import { parseHtml, htmlToPlainText, parseVisualSections } from "@/lib/htmlParser";
 import { extractDescriptionDetails } from "@/lib/listingDescriptionExtractor";
 import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
@@ -18,8 +19,56 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
   const [showHtmlViewer, setShowHtmlViewer] = useState(false);
   const [showSections, setShowSections] = useState(false);
   const [showExtractedDetails, setShowExtractedDetails] = useState(false);
+  const [showMappingWorkspace, setShowMappingWorkspace] = useState(false);
+  const [mappings, setMappings] = useState<any[]>([]);
+  const [mappingsLoading, setMappingsLoading] = useState(false);
 
   if (!item) return null;
+
+  // Load mappings when workspace is opened
+  useEffect(() => {
+    if (!showMappingWorkspace) return;
+
+    const loadMappings = async () => {
+      try {
+        setMappingsLoading(true);
+        const response = await fetch('/api/mappings');
+        if (response.ok) {
+          const data = await response.json();
+          setMappings(data);
+        }
+      } catch (error) {
+        console.error('Failed to load mappings:', error);
+      } finally {
+        setMappingsLoading(false);
+      }
+    };
+
+    loadMappings();
+  }, [showMappingWorkspace]);
+
+  const handleSaveMapping = async (mappingData: any) => {
+    try {
+      const response = await fetch('/api/mappings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(mappingData),
+      });
+
+      if (response.ok) {
+        const newMapping = await response.json();
+        setMappings(prev => [...prev, newMapping]);
+        alert('Mapping saved successfully');
+      } else {
+        alert('Failed to save mapping');
+      }
+    } catch (error) {
+      console.error('Failed to save mapping:', error);
+      alert('Failed to save mapping');
+    }
+  };
 
   const handleReprocess = async () => {
     setReprocessing(true);
@@ -135,6 +184,25 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
                     />
                   </svg>
                 </button>
+                <button
+                  onClick={() => setShowMappingWorkspace(true)}
+                  className="p-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg border border-purple-400/30 transition-colors"
+                  title="Map Elements"
+                >
+                  <svg
+                    className="w-5 h-5 text-purple-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                </button>
               </>
             )}
             <button
@@ -195,6 +263,36 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
       )}
       {showExtractedDetails && item.html && (
         <ExtractedDetailsViewer html={item.html} onClose={() => setShowExtractedDetails(false)} />
+      )}
+      {showMappingWorkspace && item.html && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4"
+          onClick={() => setShowMappingWorkspace(false)}
+        >
+          <div
+            className="bg-gray-900 shadow-2xl w-full h-full flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 'calc(100vw - 2rem)', maxHeight: 'calc(100vh - 2rem)' }}
+          >
+            <div className="bg-gray-800 border-b border-gray-700 p-6 flex justify-between items-center flex-shrink-0">
+              <h3 className="text-2xl font-bold text-white">Map Elements</h3>
+              <button
+                onClick={() => setShowMappingWorkspace(false)}
+                className="text-gray-400 hover:text-white transition-colors text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ValueMappingWorkspace
+                html={item.html}
+                mappings={mappings}
+                onSaveMapping={handleSaveMapping}
+                loading={mappingsLoading}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

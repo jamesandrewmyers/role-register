@@ -41,6 +41,7 @@ export function parseHtml(html: string): HtmlNode[] {
 
   // Remove comments
   html = html.replace(/<!--[\s\S]*?-->/g, "");
+  html = html.replace(/[\u2018\u2019\u201B]/g, "'");
 
   while ((match = tagRegex.exec(html)) !== null) {
     const textBefore = html.slice(lastIndex, match.index).trim();
@@ -160,7 +161,7 @@ export function htmlToPlainText(nodes: HtmlNode[]): string {
 }
 
 export interface VisualSection {
-  type: 'title' | 'summary' | 'section' | 'list' | 'unknown';
+  type: 'title' | 'summary' | 'section' | 'list' | 'other' | 'unknown';
   label?: string;
   lineItemType?: 'requirements' | 'responsibilities' | 'nicetohave' | 'benefits';
   content: string;
@@ -200,8 +201,8 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
   // Non-unique keywords that might match multiple categories
   const nonUniqueKeywords = {
     nicetohave: ['preferred', 'bonus', 'plus'],
-    responsibilities: ['what you', 'you will', 'day to day'],
-    requirements: ['qualification', 'you have', 'experience', 'skills', 'what we'],
+    responsibilities: ["what you'll do"],
+    requirements: ["you'll need", "you will need", 'qualification', 'you have', 'experience', 'skills', 'what we'],
     benefits: ['we offer'],
   };
 
@@ -234,6 +235,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
       .replace(/^\*\*\s*/, '')
       .replace(/\s*\*\*$/, '')
       .replace(/:\s*$/, '')
+      .replace(/[\u2018\u2019\u201B]/g, "'")
       .trim();
   }
 
@@ -294,7 +296,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     }
 
     if (tag && ['h3', 'h4', 'h5', 'h6'].includes(tag)) {
-      return { type: 'section', label: cleanedText.slice(0, 50), confidence: 0.6 };
+      return { type: 'other', label: cleanedText.slice(0, 50), confidence: 0.6 };
     }
 
     if (text.length < 200 && text.length > 20 && (tag === 'p' || tag === 'div')) {
@@ -418,9 +420,19 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
       const text = extractText(node).trim();
       const classification = classifySection(text, tag);
       
-      if (classification.confidence >= 0.5) {
+      // If classification has low confidence, treat it as 'other' section
+      let sectionToAdd = classification;
+      if (classification.confidence < 0.5) {
+        sectionToAdd = {
+          type: 'other' as const,
+          label: text.slice(0, 50),
+          confidence: 0.5
+        };
+      }
+      
+      if (sectionToAdd.confidence >= 0.5) {
         const newSection = {
-          ...classification,
+          ...sectionToAdd,
           content: text,
           node: node
         };
@@ -442,6 +454,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
           node: node,
           confidence: 0.7,
           label: currentHeader?.label,
+          // Only inherit lineItemType if currentHeader has one defined
           lineItemType: currentHeader?.lineItemType
         });
       }
