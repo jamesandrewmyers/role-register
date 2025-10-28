@@ -51,12 +51,14 @@ describe('AdminPage', () => {
   describe('rendering', () => {
     it('should render the admin page with layout', async () => {
       render(<AdminPage />);
-      expect(screen.getByTestId('html-viewer')).toBeInTheDocument();
 
       // Wait for loading to complete
       await waitFor(() => {
         expect(screen.queryByText('Loading mappings...')).not.toBeInTheDocument();
       });
+
+      // Check main layout is present
+      expect(screen.getByTestId('admin-main')).toBeInTheDocument();
       expect(screen.getByTestId('hierarchy-view')).toBeInTheDocument();
     });
 
@@ -73,7 +75,7 @@ describe('AdminPage', () => {
 
     it('should render HtmlViewer section', () => {
       render(<AdminPage />);
-      const viewerSection = screen.getByText(/html viewer/i);
+      const viewerSection = screen.getByRole('heading', { name: /html viewer/i, level: 2 });
       expect(viewerSection).toBeInTheDocument();
     });
 
@@ -85,14 +87,28 @@ describe('AdminPage', () => {
   });
 
   describe('HtmlViewer integration', () => {
-    it('should pass initial HTML to HtmlViewer', () => {
+    it('should show HtmlViewer modal when button is clicked', async () => {
+      const user = userEvent.setup();
       render(<AdminPage />);
-      expect(screen.getByText('HTML Loaded')).toBeInTheDocument();
+
+      const openButton = screen.getByText('Open HTML Viewer');
+      await user.click(openButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('html-viewer')).toBeInTheDocument();
+      });
     });
 
     it('should handle element mapping from HtmlViewer', async () => {
       const user = userEvent.setup();
       render(<AdminPage />);
+
+      const openButton = screen.getByText('Open HTML Viewer');
+      await user.click(openButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('html-viewer')).toBeInTheDocument();
+      });
 
       const mapButton = screen.getByText('Mock Map Element');
       await user.click(mapButton);
@@ -105,6 +121,13 @@ describe('AdminPage', () => {
     it('should open ValueMappingDialog when element is selected', async () => {
       const user = userEvent.setup();
       render(<AdminPage />);
+
+      const openButton = screen.getByText('Open HTML Viewer');
+      await user.click(openButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('html-viewer')).toBeInTheDocument();
+      });
 
       const mapButton = screen.getByText('Mock Map Element');
       await user.click(mapButton);
@@ -119,6 +142,13 @@ describe('AdminPage', () => {
     it('should close HtmlViewer when close button clicked', async () => {
       const user = userEvent.setup();
       render(<AdminPage />);
+
+      const openButton = screen.getByText('Open HTML Viewer');
+      await user.click(openButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('html-viewer')).toBeInTheDocument();
+      });
 
       const closeButton = screen.getByText('Close Viewer');
       await user.click(closeButton);
@@ -264,29 +294,44 @@ describe('AdminPage', () => {
       const user = userEvent.setup();
       render(<AdminPage />);
 
-      // Verify both components are visible
-      expect(screen.getByTestId('html-viewer')).toBeInTheDocument();
-
       // Wait for loading to complete
       await waitFor(() => {
         expect(screen.queryByText('Loading mappings...')).not.toBeInTheDocument();
       });
+
+      // Verify hierarchy view is visible
       expect(screen.getByTestId('hierarchy-view')).toBeInTheDocument();
+
+      // Open HTML viewer
+      const openButton = screen.getByText('Open HTML Viewer');
+      await user.click(openButton);
+
+      // Verify viewer is visible
+      await waitFor(() => {
+        expect(screen.getByTestId('html-viewer')).toBeInTheDocument();
+      });
 
       // Trigger a mapping
       const mapButton = screen.getByText('Mock Map Element');
       await user.click(mapButton);
 
-      // Both components should still be visible
+      // Dialog should open
       await waitFor(() => {
-        expect(screen.getByTestId('html-viewer')).toBeInTheDocument();
-        expect(screen.getByTestId('hierarchy-view')).toBeInTheDocument();
+        expect(screen.getByTestId('value-mapping-dialog')).toBeInTheDocument();
       });
     });
 
     it('should update mappings list after saving', async () => {
       const user = userEvent.setup();
       render(<AdminPage />);
+
+      // Open HTML viewer
+      const openButton = screen.getByText('Open HTML Viewer');
+      await user.click(openButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('html-viewer')).toBeInTheDocument();
+      });
 
       const mapButton = screen.getByText('Mock Map Element');
       await user.click(mapButton);

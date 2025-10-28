@@ -133,60 +133,59 @@ export default function AdminPage() {
   }, []);
 
   return (
-    <div data-testid="admin-main" className="grid grid-cols-2 gap-4 p-6">
-      <div className="flex flex-col">
-        <h1 className="text-3xl font-bold mb-6">Value Mapping Admin</h1>
-        
-        <section className="flex-1 overflow-hidden">
-          <h2 className="text-2xl font-semibold mb-4">HTML Viewer</h2>
-          {showHtmlViewer && (
-            <div className="border border-gray-300 rounded-lg p-4 h-full overflow-auto">
-              <HtmlViewer
-                html={sampleHtml}
-                onClose={handleCloseViewer}
-                onMapElement={handleMapElement}
-              />
-            </div>
-          )}
-          {!showHtmlViewer && (
+    <>
+      <div data-testid="admin-main" className="grid grid-cols-2 gap-4 p-6">
+        <div className="flex flex-col">
+          <h1 className="text-3xl font-bold mb-6">Value Mapping Admin</h1>
+
+          <section className="flex-1 overflow-hidden">
+            <h2 className="text-2xl font-semibold mb-4">HTML Viewer</h2>
             <div className="border border-gray-300 rounded-lg p-4 h-full flex items-center justify-center">
               <button
                 onClick={() => setShowHtmlViewer(true)}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
-                Show HTML Viewer
+                Open HTML Viewer
               </button>
             </div>
-          )}
-        </section>
+          </section>
+        </div>
+
+        <div className="flex flex-col">
+          <h2 className="text-2xl font-semibold mb-4">Mappings</h2>
+          <section className="flex-1 overflow-auto border border-gray-300 rounded-lg p-4">
+            {loading ? (
+              <div className="text-center py-4">Loading mappings...</div>
+            ) : (
+              <ValueMappingHierarchyView
+                mappings={mappings}
+                onEdit={handleEditMapping}
+                onDelete={handleDeleteMapping}
+                onReorder={handleReorderMapping}
+                onAddMapping={handleAddMapping}
+              />
+            )}
+          </section>
+        </div>
+
+        <ValueMappingDialog
+          isOpen={isDialogOpen}
+          cssSelector={selectedSelector || ''}
+          onClose={() => {
+            setIsDialogOpen(false);
+            setSelectedSelector(null);
+          }}
+          onSave={handleSaveMapping}
+        />
       </div>
 
-      <div className="flex flex-col">
-        <h2 className="text-2xl font-semibold mb-4">Mappings</h2>
-        <section className="flex-1 overflow-auto border border-gray-300 rounded-lg p-4">
-          {loading ? (
-            <div className="text-center py-4">Loading mappings...</div>
-          ) : (
-            <ValueMappingHierarchyView
-              mappings={mappings}
-              onEdit={handleEditMapping}
-              onDelete={handleDeleteMapping}
-              onReorder={handleReorderMapping}
-              onAddMapping={handleAddMapping}
-            />
-          )}
-        </section>
-      </div>
-
-      <ValueMappingDialog
-        isOpen={isDialogOpen}
-        cssSelector={selectedSelector || ''}
-        onClose={() => {
-          setIsDialogOpen(false);
-          setSelectedSelector(null);
-        }}
-        onSave={handleSaveMapping}
-      />
-    </div>
+      {showHtmlViewer && (
+        <HtmlViewer
+          html={sampleHtml}
+          onClose={handleCloseViewer}
+          onMapElement={handleMapElement}
+        />
+      )}
+    </>
   );
 }
