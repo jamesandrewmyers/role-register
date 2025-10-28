@@ -7,6 +7,7 @@ interface HtmlViewerProps {
   html: string;
   onClose: () => void;
   onMapElement?: (selector: string) => void;
+  isModal?: boolean;
 }
 
 interface ContextMenu {
@@ -157,7 +158,7 @@ function HtmlNodeView({
   return null;
 }
 
-export default function HtmlViewer({ html, onClose, onMapElement }: HtmlViewerProps) {
+export default function HtmlViewer({ html, onClose, onMapElement, isModal = true }: HtmlViewerProps) {
   const nodes = parseHtml(html);
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -279,99 +280,109 @@ export default function HtmlViewer({ html, onClose, onMapElement }: HtmlViewerPr
     };
   }, [showSearch, searchTerm, currentMatchIndex, contextMenu.visible]);
 
-  return (
-    <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-gray-900 rounded-2xl border border-gray-700 shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-            </svg>
-            HTML Viewer
-          </h3>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                setShowSearch(!showSearch);
-                if (!showSearch) {
-                  setTimeout(() => searchInputRef.current?.focus(), 0);
-                }
-              }}
-              className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-              title="Search (Ctrl+F)"
-            >
-              <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors text-2xl leading-none"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-        {showSearch && (
-          <div className="bg-gray-800 border-b border-gray-700 p-3">
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search HTML..."
-              className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-            />
-          </div>
-        )}
-        <div ref={contentRef} className="p-6 overflow-y-auto flex-1 bg-gray-950" key={renderKey}>
-          {nodes.map((node, idx) => (
-            <HtmlNodeView 
-              key={idx} 
-              node={node} 
-              searchTerm={searchTerm} 
-              firstMatchTracker={firstMatchTrackerRef.current}
-              onElementContextMenu={handleContextMenu}
-              selectedSelector={selectedSelector}
-            />
-          ))}
-        </div>
-
-        {/* Context Menu */}
-        {contextMenu.visible && (
-          <div
-            role="menu"
-            className="fixed bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-[70]"
-            style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
-            onClick={(e) => e.stopPropagation()}
+  const content = (
+    <div className="bg-gray-900 rounded-2xl border border-gray-700 shadow-2xl w-full flex flex-col h-full">
+      <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex justify-between items-center">
+        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          HTML Viewer
+        </h3>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setShowSearch(!showSearch);
+              if (!showSearch) {
+                setTimeout(() => searchInputRef.current?.focus(), 0);
+              }
+            }}
+            className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            title="Search (Ctrl+F)"
           >
-            <button
-              onClick={handleMapElement}
-              className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-white text-sm first:rounded-t-lg"
-            >
-              Map This Element
-            </button>
-            <button
-              onClick={handleCopySelector}
-              className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-white text-sm border-t border-gray-600"
-            >
-              Copy Selector
-            </button>
-            <button
-              onClick={handleInspect}
-              className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-white text-sm border-t border-gray-600 last:rounded-b-lg"
-            >
-              Inspect
-            </button>
-          </div>
-        )}
+            <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
       </div>
+      {showSearch && (
+        <div className="bg-gray-800 border-b border-gray-700 p-3">
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search HTML..."
+            className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+          />
+        </div>
+      )}
+      <div ref={contentRef} className="p-6 overflow-y-auto flex-1 bg-gray-950" key={renderKey}>
+        {nodes.map((node, idx) => (
+          <HtmlNodeView
+            key={idx}
+            node={node}
+            searchTerm={searchTerm}
+            firstMatchTracker={firstMatchTrackerRef.current}
+            onElementContextMenu={handleContextMenu}
+            selectedSelector={selectedSelector}
+          />
+        ))}
+      </div>
+
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <div
+          role="menu"
+          className="fixed bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-[70]"
+          style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={handleMapElement}
+            className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-white text-sm first:rounded-t-lg"
+          >
+            Map This Element
+          </button>
+          <button
+            onClick={handleCopySelector}
+            className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-white text-sm border-t border-gray-600"
+          >
+            Copy Selector
+          </button>
+          <button
+            onClick={handleInspect}
+            className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-white text-sm border-t border-gray-600 last:rounded-b-lg"
+          >
+            Inspect
+          </button>
+        </div>
+      )}
     </div>
   );
+
+  if (isModal) {
+    return (
+      <div
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+        onClick={onClose}
+      >
+        <div
+          className="max-w-6xl max-h-[90vh]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  return content;
 }
