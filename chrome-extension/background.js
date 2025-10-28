@@ -1,43 +1,43 @@
 // Handle extension icon clicks
 chrome.action.onClicked.addListener((tab) => {
-  // Only process on LinkedIn or Indeed
-  if (tab.url.includes("linkedin.com/jobs") || tab.url.includes("indeed.com")) {
-    // Send message to content script to extract job data
+  // Only process on LinkedIn, Indeed, or Gmail
+  if (tab.url.includes("linkedin.com/jobs") || tab.url.includes("indeed.com") || tab.url.includes("mail.google.com")) {
+    // Send message to content script to extract job/email data
     chrome.tabs.sendMessage(tab.id, { action: "extractAndSend" }, (response) => {
       console.log("Response from content script:", response);
       if (chrome.runtime.lastError) {
         console.log("Error:", chrome.runtime.lastError);
-        showNotification("Job Capture Error", "Failed to capture job data. Make sure you're on a job posting page.");
+        showNotification("Capture Error", "Failed to capture data. Make sure you're on a supported page.");
       } else if (response && response.success && response.jobData) {
-        // Now send the job data to the API from background script
-        sendJobDataToAPI(response.jobData);
+        // Now send the data to the API from background script
+        sendDataToAPI(response.jobData);
       } else {
-        showNotification("Job Capture Failed", response?.error || "Failed to extract job data from page.");
+        showNotification("Capture Failed", response?.error || "Failed to extract data from page.");
       }
     });
   } else {
-    showNotification("Job Capture", "Please navigate to a LinkedIn or Indeed job posting to capture data.");
+    showNotification("Capture", "Please navigate to a LinkedIn job posting, Indeed job, or Gmail email to capture data.");
   }
 });
 
-// Function to send job data to API
-async function sendJobDataToAPI(jobData) {
+// Function to send data (job/email) to API
+async function sendDataToAPI(jobData) {
   try {
     const response = await fetch("http://localhost:3000/api/import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(jobData)
     });
-    
+
     if (response.ok) {
       const result = await response.json();
-      showNotification("Job Captured!", "Job posting has been sent to your app successfully.");
+      showNotification("Data Captured!", "Content has been sent to your app successfully.");
     } else {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
   } catch (error) {
-    console.error("Error sending job data:", error);
-    showNotification("Job Capture Failed", `Failed to send data to app: ${error.message}`);
+    console.error("Error sending data:", error);
+    showNotification("Capture Failed", `Failed to send data to app: ${error.message}`);
   }
 }
 

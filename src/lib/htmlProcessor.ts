@@ -4,6 +4,7 @@ import { parseHtml, parseVisualSections } from "@/lib/htmlParser";
 import { extractDescriptionDetails } from "@/lib/listingDescriptionExtractor";
 import { parseLinkedInJob } from "@/lib/sites/linkedIn";
 import { parseIndeedJob } from "@/lib/sites/indeed";
+import { parseGmailEmail } from "@/lib/sites/gmail";
 import { runInTransaction } from "@/lib/db";
 import * as dataReceivedService from "@/services/dataReceivedService";
 import * as roleCompanyService from "@/services/roleCompanyService";
@@ -42,6 +43,8 @@ export function processHtmlRecord(dataReceivedId: DataReceivedId): string {
       parsingLog += processLinkedInJob($, dataReceivedId, parsingLog);
     } else if (url.hostname === "www.indeed.com") {
       parsingLog += processIndeedJob($, dataReceivedId, parsingLog);
+    } else if (url.hostname === "mail.google.com") {
+      parsingLog += processGmailEmail($, dataReceivedId, parsingLog);
     } else {
       parsingLog += `[Parser] No parser configured for hostname: ${url.hostname}\n`;
     }
@@ -152,6 +155,23 @@ function processIndeedJob($: cheerio.CheerioAPI, dataReceivedId: DataReceivedId,
       });
     }
   }
+
+  return log;
+}
+
+function processGmailEmail($: cheerio.CheerioAPI, dataReceivedId: DataReceivedId, initialLog: string): string {
+  let log = "[Gmail Parser] Parsing email...\n";
+
+  const { subject, from, to, emailBody } = parseGmailEmail($);
+
+  log += `[Gmail Parser] Subject: ${subject}\n`;
+  log += `[Gmail Parser] From: ${from}\n`;
+  log += `[Gmail Parser] To: ${to}\n`;
+  log += `[Gmail Parser] Email body length: ${emailBody.length} characters\n`;
+
+  // For Gmail, we just store the email data without creating role listings
+  // This allows for later processing and handling of email data
+  log += `[Gmail Parser] Email captured and stored. No role listing created (will be handled later).\n`;
 
   return log;
 }

@@ -21,7 +21,8 @@
       {
         "matches": [
           "https://*.linkedin.com/jobs/*",
-          "https://*.indeed.com/*"
+          "https://*.indeed.com/*",
+          "https://mail.google.com/*"
         ],
         "js": ["content.js"]
       }
