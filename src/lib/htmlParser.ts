@@ -188,7 +188,7 @@ export interface VisualSection {
  */
 export function parseVisualSections(root: HtmlNode): VisualSection[] {
   const sections: VisualSection[] = [];
-  
+
   // Unique keywords that only match one specific category
   const uniqueKeywords = {
     nicetohave: ['nice to have', 'nice-to-have', 'nice to hav', 'nice-to-hav', 'preferred', 'recommended'],
@@ -197,7 +197,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     benefits: ['benefit', 'perks', 'compensation', 'salary', 'package'],
     about: ['about us', 'about the', 'who we are', 'our company', 'our team', 'company description'],
   };
-  
+
   // Non-unique keywords that might match multiple categories
   const nonUniqueKeywords = {
     nicetohave: ['preferred', 'bonus', 'plus'],
@@ -242,7 +242,7 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
   function classifySection(text: string, tag?: string): { type: VisualSection['type']; label?: string; lineItemType?: VisualSection['lineItemType']; confidence: number } {
     const cleanedText = cleanSectionText(text);
     const lowerText = cleanedText.toLowerCase().trim();
-    
+
     if ((tag === 'h1' || tag === 'h2') && text.length < 100) {
       return { type: 'title', confidence: 0.9 };
     }
@@ -251,10 +251,10 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     for (const [category, keywords] of Object.entries(uniqueKeywords)) {
       for (const keyword of keywords) {
         if (lowerText.includes(keyword)) {
-          const lineItemType = ['requirements', 'responsibilities', 'nicetohave', 'benefits'].includes(category) 
-            ? category as VisualSection['lineItemType']
+          const lineItemType = ['requirements', 'responsibilities', 'nicetohave', 'benefits'].includes(category)
+            ? (category as VisualSection['lineItemType'])
             : undefined;
-          
+
           return {
             type: 'section',
             label: category.charAt(0).toUpperCase() + category.slice(1),
@@ -264,10 +264,10 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
         }
       }
     }
-    
+
     // No unique keyword matched - check non-unique keywords and pick longest match
     let bestMatch: { category: string; keyword: string } | null = null;
-    
+
     for (const [category, keywords] of Object.entries(nonUniqueKeywords)) {
       for (const keyword of keywords) {
         if (lowerText.includes(keyword)) {
@@ -277,12 +277,12 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
         }
       }
     }
-    
+
     if (bestMatch) {
-      const lineItemType = ['requirements', 'responsibilities', 'nicetohave', 'benefits'].includes(bestMatch.category) 
-        ? bestMatch.category as VisualSection['lineItemType']
+      const lineItemType = ['requirements', 'responsibilities', 'nicetohave', 'benefits'].includes(bestMatch.category)
+        ? (bestMatch.category as VisualSection['lineItemType'])
         : undefined;
-      
+
       return {
         type: 'section',
         label: bestMatch.category.charAt(0).toUpperCase() + bestMatch.category.slice(1),
@@ -306,167 +306,119 @@ export function parseVisualSections(root: HtmlNode): VisualSection[] {
     return { type: 'unknown', confidence: 0.3 };
   }
 
-  function isStrongWrapped(node: HtmlNode): boolean {
-    if (!node.children || node.children.length === 0) return false;
-    
-    const hasStrongChild = node.children.some(child => 
-      child.type === 'element' && (child.tag === 'strong' || child.tag === 'b')
-    );
-    
-    return hasStrongChild;
+  // Step 1: Collect all potential section headers and lists in document order
+  interface Candidate {
+    type: 'header' | 'list';
+    node: HtmlNode;
+    headerText?: string;
+    listItems?: string;
   }
 
-  function isEmphasisWrapped(node: HtmlNode): boolean {
-    if (!node.children || node.children.length === 0) return false;
-    
-    const hasEmChild = node.children.some(child => 
-      child.type === 'element' && (child.tag === 'em' || child.tag === 'i')
-    );
-    
-    return hasEmChild;
-  }
+  const candidates: Candidate[] = [];
 
-  function isSectionHeading(node: HtmlNode): boolean {
-    const tag = node.tag?.toLowerCase();
-    if (tag && ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
-      return true;
-    }
-    if ((tag === 'p' || tag === 'div' || tag === 'span') && (isStrongWrapped(node) || isEmphasisWrapped(node))) {
-      const text = extractDirectText(node);
-      return text.length > 5 && text.length < 150;
-    }
-    return false;
-  }
-
-  function hasListNearby(node: HtmlNode, parent: HtmlNode | null): boolean {
-    if (!parent || !parent.children) return false;
-    
-    const nodeIndex = parent.children.indexOf(node);
-    if (nodeIndex === -1) return false;
-    
-    function hasListDescendant(element: HtmlNode, depth: number = 0): boolean {
-      if (depth > 2) return false;
-      if (element.type === 'element' && (element.tag === 'ul' || element.tag === 'ol')) {
-        return true;
+  function collect(node: HtmlNode) {
+    // Check if this is a heading tag (h1-h6)
+    if (node.type === 'element' && node.tag && ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node.tag)) {
+      const text = extractText(node).trim();
+      if (text) {
+        candidates.push({ type: 'header', node, headerText: text });
       }
-      if (element.children) {
-        for (const child of element.children) {
-          if (hasListDescendant(child, depth + 1)) {
-            return true;
-          }
+    }
+
+    // Check if this is strong/em wrapped text in p/div/span that looks like a header
+    if (node.type === 'element' && (node.tag === 'p' || node.tag === 'div' || node.tag === 'span')) {
+      const hasStrong = node.children?.some(child => child.type === 'element' && (child.tag === 'strong' || child.tag === 'b'));
+      const hasEm = node.children?.some(child => child.type === 'element' && (child.tag === 'em' || child.tag === 'i'));
+      if (hasStrong || hasEm) {
+        const text = extractDirectText(node);
+        if (text.length > 5 && text.length < 150 && text.endsWith(':')) {
+          candidates.push({ type: 'header', node, headerText: text });
         }
       }
-      return false;
     }
-    
-    for (let i = nodeIndex + 1; i < Math.min(nodeIndex + 5, parent.children.length); i++) {
-      const sibling = parent.children[i];
-      if (hasListDescendant(sibling)) {
-        return true;
+
+    // Check for plain text section headers (text nodes ending with : that match keywords)
+    if (node.type === 'text' && node.content) {
+      const text = node.content.trim();
+      if (text.endsWith(':') && text.length >= 10 && text.length <= 100) {
+        const sectionKeywords = [
+          'experience', 'qualification', 'requirement', 'skill', 'responsibilit',
+          'duties', 'benefit', 'offer', 'perks', 'about', 'what you', 'nice to have',
+          'preferred', 'must have'
+        ];
+        if (sectionKeywords.some(keyword => text.toLowerCase().includes(keyword))) {
+          candidates.push({ type: 'header', node, headerText: text });
+        }
       }
     }
-    return false;
-  }
 
-  function isPlainTextSectionHeader(textNode: HtmlNode, parent: HtmlNode | null): boolean {
-    if (textNode.type !== 'text' || !textNode.content) return false;
-    
-    const text = textNode.content.trim();
-    
-    if (!text.endsWith(':')) return false;
-    if (text.length < 10 || text.length > 100) return false;
-    
-    const lowerText = text.toLowerCase();
-    const sectionKeywords = [
-      'experience', 'qualification', 'requirement', 'skill', 'responsibilit',
-      'duties', 'benefit', 'offer', 'perks', 'about', 'what you', 'nice to have',
-      'preferred', 'must have'
-    ];
-    
-    const hasKeyword = sectionKeywords.some(keyword => lowerText.includes(keyword));
-    if (!hasKeyword) return false;
-    
-    return hasListNearby(textNode, parent);
-  }
-
-  let currentHeader: VisualSection | null = null;
-
-  function traverse(node: HtmlNode, parent: HtmlNode | null = null) {
-    // Check if this text node is a plain text section header
-    if (node.type === 'text' && parent && isPlainTextSectionHeader(node, parent)) {
-      const text = node.content!.trim();
-      const parentTag = parent.tag?.toLowerCase();
-      const classification = classifySection(text, parentTag);
-      
-      if (classification.confidence >= 0.5) {
-        const newSection = {
-          ...classification,
-          content: text,
-          node: node,
-          confidence: Math.max(0.7, classification.confidence - 0.1)
-        };
-        sections.push(newSection);
-        currentHeader = newSection;
+    // Check if this is a list (ul or ol)
+    if (node.type === 'element' && (node.tag === 'ul' || node.tag === 'ol')) {
+      const items = node.children?.filter(child => child.tag === 'li') || [];
+      if (items.length > 0) {
+        const listText = items.map(extractText).join('\n');
+        candidates.push({ type: 'list', node, listItems: listText });
       }
-      return;
     }
-    
-    if (node.type !== 'element' || !node.children) return;
 
-    const tag = node.tag?.toLowerCase();
+    // Recurse
+    if (node.children) {
+      for (const child of node.children) {
+        collect(child);
+      }
+    }
+  }
 
-    // Check if this node itself is a section heading
-    if (isSectionHeading(node)) {
-      const text = extractText(node).trim();
-      const classification = classifySection(text, tag);
-      
-      // If classification has low confidence, treat it as 'other' section
-      let sectionToAdd = classification;
+  collect(root);
+
+  // Step 2: Process candidates linearly - last header before a list claims that list
+  let lastHeader: { classification: any; text: string; node: HtmlNode } | null = null;
+
+  for (const candidate of candidates) {
+    if (candidate.type === 'header') {
+      const classification = classifySection(candidate.headerText!);
+
+      // If classification has low confidence, treat as 'other'
+      let finalClassification = classification;
       if (classification.confidence < 0.5) {
-        sectionToAdd = {
+        finalClassification = {
           type: 'other' as const,
-          label: text.slice(0, 50),
+          label: cleanSectionText(candidate.headerText!).slice(0, 50),
           confidence: 0.5
         };
       }
-      
-      if (sectionToAdd.confidence >= 0.5) {
-        const newSection = {
-          ...sectionToAdd,
-          content: text,
-          node: node
-        };
-        sections.push(newSection);
-        currentHeader = newSection;
-      }
-      // Continue traversing children - don't return early
-      // This allows nested sections to be found (e.g., <p><b> inside a <div><b>)
-    }
 
-    if (tag === 'ul' || tag === 'ol') {
-      const items = node.children.filter(child => child.tag === 'li');
-      if (items.length > 0) {
-        const listText = items.map(extractText).join('\n');
-        
+      if (finalClassification.confidence >= 0.5) {
+        lastHeader = {
+          classification: finalClassification,
+          text: candidate.headerText!,
+          node: candidate.node
+        };
+      }
+    } else if (candidate.type === 'list') {
+      // Create a list section, attributed to the last header found
+      sections.push({
+        type: 'list',
+        content: candidate.listItems!,
+        node: candidate.node,
+        confidence: 0.7,
+        label: lastHeader?.classification.label,
+        lineItemType: lastHeader?.classification.lineItemType
+      });
+
+      // Also create the header section if we haven't already
+      if (lastHeader && !sections.some(s => s.node === lastHeader!.node)) {
         sections.push({
-          type: 'list',
-          content: listText,
-          node: node,
-          confidence: 0.7,
-          label: currentHeader?.label,
-          // Only inherit lineItemType if currentHeader has one defined
-          lineItemType: currentHeader?.lineItemType
+          type: lastHeader.classification.type,
+          label: lastHeader.classification.label,
+          lineItemType: lastHeader.classification.lineItemType,
+          content: lastHeader.text,
+          node: lastHeader.node,
+          confidence: lastHeader.classification.confidence
         });
       }
-      return;
-    }
-
-    for (const child of node.children) {
-      traverse(child, node);
     }
   }
-
-  traverse(root);
 
   return sections.filter(section => section.confidence >= 0.5);
 }

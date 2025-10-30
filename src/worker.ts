@@ -28,7 +28,7 @@ parentPort.on("message", async (eventId: string) => {
       const payload = JSON.parse(job.payload);
       console.log("Processing HTML for data_received ID: ", payload.dataReceivedId);
 
-      let parsingLog: string;
+      let parsingLog: string = "";
 
       runInTransaction(() => {
         eventInfoService.updateEventStatus(eventId as EventInfoId, "processing");
