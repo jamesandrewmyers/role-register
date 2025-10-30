@@ -40,7 +40,7 @@ export function extractDescriptionDetails(sections: VisualSection[]): ExtractedD
   });
 
   for (const section of sortedSections) {
-    // Skip sections without lineItemType (they don't belong in any category)
+    if (!section.type || section.type === 'section') continue;
     if (!section.lineItemType) continue;
 
     const content = section.content.trim();
