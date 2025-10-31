@@ -154,10 +154,6 @@ export default function VisualHTMLPane({
           position: relative;
         }
 
-        [data-node-path]:hover {
-          background-color: rgba(59, 130, 246, 0.1);
-        }
-
         [data-node-path].inspector-selected {
           background-color: rgba(37, 99, 235, 0.25) !important;
           box-shadow: inset 0 0 0 2px #2563eb !important;
