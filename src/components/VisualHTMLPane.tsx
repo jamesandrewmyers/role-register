@@ -55,6 +55,7 @@ export default function VisualHTMLPane({
 }: VisualHTMLPaneProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const selectedElRef = useRef<HTMLElement | null>(null);
+  const selectedNodePathRef = useRef<string | null>(null);
 
   // Parse HTML and add node path attributes
   const htmlWithPaths = useRef<string>("");
@@ -72,12 +73,24 @@ export default function VisualHTMLPane({
     htmlWithPaths.current = addNodePathAttributes(root);
   }, [html]);
 
-  // Render HTML content
+  // Render HTML content and set up click tracking
   useEffect(() => {
     if (!contentRef.current) return;
 
     // Set the HTML content
     contentRef.current.innerHTML = htmlWithPaths.current;
+
+    // Re-apply selection if we have one stored
+    if (selectedNodePathRef.current) {
+      const selectedElement = contentRef.current.querySelector(
+        `[data-node-path="${selectedNodePathRef.current}"]`
+      ) as HTMLElement | null;
+
+      if (selectedElement) {
+        selectedElement.classList.add("inspector-selected");
+        selectedElRef.current = selectedElement;
+      }
+    }
 
     // Set up click tracking
     const handleElementClick = (event: Event) => {
@@ -98,6 +111,7 @@ export default function VisualHTMLPane({
           // Add highlight to new selection
           nodePathEl.classList.add("inspector-selected");
           selectedElRef.current = nodePathEl;
+          selectedNodePathRef.current = nodePath;
 
           // Call parent callback with node path
           onElementClick(nodePath);
@@ -119,6 +133,9 @@ export default function VisualHTMLPane({
   // Handle external selection (when parent sets selectedNodePath)
   useEffect(() => {
     if (!contentRef.current || !selectedNodePath) return;
+
+    // Store the selected path so we can re-apply it if HTML re-renders
+    selectedNodePathRef.current = selectedNodePath;
 
     // Clear all inspector-selected classes
     contentRef.current
