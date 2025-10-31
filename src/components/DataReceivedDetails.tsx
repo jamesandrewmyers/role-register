@@ -16,6 +16,8 @@ interface DataReceivedDetailsProps {
 }
 
 export default function DataReceivedDetails({ item, onClose }: DataReceivedDetailsProps) {
+  if (!item) return null;
+
   const [reprocessing, setReprocessing] = useState(false);
   const [showHtmlViewer, setShowHtmlViewer] = useState(false);
   const [showSections, setShowSections] = useState(false);
@@ -45,7 +47,7 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
     };
 
     loadMappings();
-  }, [showMappingWorkspace]);
+  }, [showMappingWorkspace, item]);
 
   const handleSaveMapping = async (mappingData: Record<string, unknown>) => {
     try {
@@ -110,10 +112,8 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
     html: formattedHtml,
     receivedAt: new Date(item.receivedAt * 1000).toLocaleString(),
   };
-  
-  const entries = Object.entries(displayData).filter(([key, value]) => value !== undefined && value !== null);
 
-  if (!item) return null;
+  const entries = Object.entries(displayData).filter(([key, value]) => value !== undefined && value !== null);
 
   return (
     <div
@@ -277,11 +277,11 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
         </div>
       </div>
       {showInspector && item.html && (
-        <DataReceivedInspector 
+        <DataReceivedInspector
           dataReceivedId={item.id}
           html={item.html}
           url={item.url}
-          onClose={() => setShowInspector(false)} 
+          onClose={() => setShowInspector(false)}
         />
       )}
       {showHtmlViewer && item.html && (
@@ -394,8 +394,8 @@ function ExtractedDetailsViewer({ html, onClose }: { html: string; onClose: () =
     return extractDescriptionDetails(sections);
   }, [html]);
 
-  const hasAnyContent = extractedDetails.requirements.length > 0 || 
-                       extractedDetails.responsibilities.length > 0 || 
+  const hasAnyContent = extractedDetails.requirements.length > 0 ||
+                       extractedDetails.responsibilities.length > 0 ||
                        extractedDetails.benefits.length > 0;
 
   return (
@@ -434,7 +434,7 @@ function ExtractedDetailsViewer({ html, onClose }: { html: string; onClose: () =
                   </ul>
                 </div>
               )}
-              
+
               {extractedDetails.responsibilities.length > 0 && (
                 <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                   <h4 className="text-purple-300 font-semibold text-lg mb-3">Responsibilities</h4>
@@ -448,7 +448,7 @@ function ExtractedDetailsViewer({ html, onClose }: { html: string; onClose: () =
                   </ul>
                 </div>
               )}
-              
+
               {extractedDetails.benefits.length > 0 && (
                 <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                   <h4 className="text-purple-300 font-semibold text-lg mb-3">Benefits</h4>

@@ -76,12 +76,19 @@ export default function VisualHTMLPane({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Clear existing shadow root
-    containerRef.current.innerHTML = "";
+    // Handle existing shadow root - can't attach a new one if one exists
+    if (shadowRootRef.current) {
+      // Clear the existing shadow root's content
+      while (shadowRootRef.current.firstChild) {
+        shadowRootRef.current.removeChild(shadowRootRef.current.firstChild);
+      }
+    } else {
+      // Only attach a new shadow root if one doesn't exist
+      const newShadowRoot = containerRef.current.attachShadow({ mode: "open" });
+      shadowRootRef.current = newShadowRoot;
+    }
 
-    // Create shadow root for style isolation
-    const shadowRoot = containerRef.current.attachShadow({ mode: "open" });
-    shadowRootRef.current = shadowRoot;
+    const shadowRoot = shadowRootRef.current;
 
     // Add base styles to shadow DOM
     const styleSheet = document.createElement("style");
