@@ -88,9 +88,11 @@ export default function VisualHTMLPane({
       if (nodePathEl && nodePathEl instanceof HTMLElement) {
         const nodePath = nodePathEl.getAttribute("data-node-path");
         if (nodePath) {
-          // Remove previous selection highlight
-          if (selectedElRef.current) {
-            selectedElRef.current.classList.remove("inspector-selected");
+          // Clear all inspector-selected classes first
+          if (contentRef.current) {
+            contentRef.current
+              .querySelectorAll(".inspector-selected")
+              .forEach((el) => el.classList.remove("inspector-selected"));
           }
 
           // Add highlight to new selection
@@ -118,10 +120,10 @@ export default function VisualHTMLPane({
   useEffect(() => {
     if (!contentRef.current || !selectedNodePath) return;
 
-    // Clear previous selection
-    if (selectedElRef.current) {
-      selectedElRef.current.classList.remove("inspector-selected");
-    }
+    // Clear all inspector-selected classes
+    contentRef.current
+      .querySelectorAll(".inspector-selected")
+      .forEach((el) => el.classList.remove("inspector-selected"));
 
     // Find element with matching node path
     const selectedElement = contentRef.current.querySelector(
@@ -157,8 +159,8 @@ export default function VisualHTMLPane({
         }
 
         [data-node-path].inspector-selected {
-          background-color: rgba(37, 99, 235, 0.25);
-          box-shadow: inset 0 0 0 2px #2563eb;
+          background-color: rgba(37, 99, 235, 0.25) !important;
+          box-shadow: inset 0 0 0 2px #2563eb !important;
           border-radius: 2px;
         }
 
