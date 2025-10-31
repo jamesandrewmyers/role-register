@@ -54,7 +54,7 @@ export default function VisualHTMLPane({
   onElementClick,
 }: VisualHTMLPaneProps) {
   const contentRef = useRef<HTMLDivElement>(null);
-  const [selectedEl, setSelectedEl] = useState<HTMLElement | null>(null);
+  const selectedElRef = useRef<HTMLElement | null>(null);
 
   // Parse HTML and add node path attributes
   const htmlWithPaths = useRef<string>("");
@@ -89,13 +89,13 @@ export default function VisualHTMLPane({
         const nodePath = nodePathEl.getAttribute("data-node-path");
         if (nodePath) {
           // Remove previous selection highlight
-          if (selectedEl) {
-            selectedEl.classList.remove("inspector-selected");
+          if (selectedElRef.current) {
+            selectedElRef.current.classList.remove("inspector-selected");
           }
 
           // Add highlight to new selection
           nodePathEl.classList.add("inspector-selected");
-          setSelectedEl(nodePathEl);
+          selectedElRef.current = nodePathEl;
 
           // Call parent callback with node path
           onElementClick(nodePath);
@@ -112,15 +112,15 @@ export default function VisualHTMLPane({
     return () => {
       contentRef.current?.removeEventListener("click", handleElementClick, true);
     };
-  }, [html, onElementClick, selectedEl]);
+  }, [html, onElementClick]);
 
   // Handle external selection (when parent sets selectedNodePath)
   useEffect(() => {
     if (!contentRef.current || !selectedNodePath) return;
 
     // Clear previous selection
-    if (selectedEl) {
-      selectedEl.classList.remove("inspector-selected");
+    if (selectedElRef.current) {
+      selectedElRef.current.classList.remove("inspector-selected");
     }
 
     // Find element with matching node path
@@ -130,10 +130,9 @@ export default function VisualHTMLPane({
 
     if (selectedElement) {
       selectedElement.classList.add("inspector-selected");
-      setSelectedEl(selectedElement);
-      // Don't scroll into view - let user control scroll position
+      selectedElRef.current = selectedElement;
     }
-  }, [selectedNodePath, selectedEl]);
+  }, [selectedNodePath]);
 
   return (
     <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-800 to-slate-900 rounded-lg overflow-hidden border border-purple-400/20">
