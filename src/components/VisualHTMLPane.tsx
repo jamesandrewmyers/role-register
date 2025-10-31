@@ -131,19 +131,17 @@ export default function VisualHTMLPane({
     if (selectedElement) {
       selectedElement.classList.add("inspector-selected");
       setSelectedEl(selectedElement);
-      // Scroll into view
-      selectedElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Don't scroll into view - let user control scroll position
     }
   }, [selectedNodePath, selectedEl]);
 
   return (
-    <div className="w-full h-full flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200">
+    <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-800 to-slate-900 rounded-lg overflow-hidden border border-purple-400/20">
       <div
         ref={contentRef}
         className="flex-1 overflow-auto p-8"
         style={{
-          scrollBehavior: "smooth",
-          color: "#1f2937",
+          color: "#e5e7eb",
         }}
       >
         {/* Content will be rendered here via innerHTML */}
@@ -155,18 +153,18 @@ export default function VisualHTMLPane({
         }
 
         [data-node-path]:hover {
-          background-color: rgba(59, 130, 246, 0.1);
+          background-color: rgba(59, 130, 246, 0.15);
         }
 
         [data-node-path].inspector-selected {
           outline: 2px solid #2563eb;
           outline-offset: 2px;
-          background-color: rgba(37, 99, 235, 0.15);
+          background-color: rgba(37, 99, 235, 0.25);
         }
 
         /* Typography improvements */
         h1, h2, h3, h4, h5, h6 {
-          color: #111827;
+          color: #f0f9ff;
           font-weight: 600;
           margin-top: 1.5em;
           margin-bottom: 0.5em;
@@ -183,12 +181,14 @@ export default function VisualHTMLPane({
         p {
           margin: 1em 0;
           line-height: 1.7;
+          color: #d1d5db;
         }
 
         ul, ol {
           margin: 1em 0;
           padding-left: 2em;
           line-height: 1.7;
+          color: #d1d5db;
         }
 
         li {
@@ -196,26 +196,29 @@ export default function VisualHTMLPane({
         }
 
         a {
-          color: #2563eb;
+          color: #60a5fa;
           text-decoration: none;
           font-weight: 500;
         }
 
         a:hover {
           text-decoration: underline;
+          color: #93c5fd;
         }
 
         strong, b {
           font-weight: 600;
-          color: #111827;
+          color: #f0f9ff;
         }
 
         em, i {
           font-style: italic;
+          color: #d1d5db;
         }
 
         code {
-          background-color: #f3f4f6;
+          background-color: #1f2937;
+          color: #a7f3d0;
           padding: 0.2em 0.4em;
           border-radius: 0.25em;
           font-family: monospace;
@@ -223,19 +226,20 @@ export default function VisualHTMLPane({
         }
 
         pre {
-          background-color: #1f2937;
-          color: #e5e7eb;
+          background-color: #0f172a;
+          color: #e2e8f0;
           padding: 1em;
           border-radius: 0.5em;
           overflow-x: auto;
           margin: 1em 0;
+          border: 1px solid #334155;
         }
 
         blockquote {
-          border-left: 4px solid #d1d5db;
+          border-left: 4px solid #7c3aed;
           padding-left: 1em;
           margin-left: 0;
-          color: #6b7280;
+          color: #a78bfa;
           font-style: italic;
         }
 
@@ -246,19 +250,21 @@ export default function VisualHTMLPane({
         }
 
         table td, table th {
-          border: 1px solid #e5e7eb;
+          border: 1px solid #475569;
           padding: 0.75em;
           text-align: left;
+          color: #d1d5db;
         }
 
         table th {
-          background-color: #f9fafb;
+          background-color: #1e293b;
           font-weight: 600;
+          color: #f0f9ff;
         }
 
         hr {
           border: none;
-          border-top: 1px solid #e5e7eb;
+          border-top: 1px solid #475569;
           margin: 2em 0;
         }
 
@@ -266,6 +272,7 @@ export default function VisualHTMLPane({
           max-width: 100%;
           height: auto;
           border-radius: 0.5em;
+          border: 1px solid #475569;
         }
       `}</style>
     </div>
