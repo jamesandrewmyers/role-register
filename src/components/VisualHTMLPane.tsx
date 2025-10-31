@@ -53,8 +53,8 @@ export default function VisualHTMLPane({
   selectedNodePath,
   onElementClick,
 }: VisualHTMLPaneProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const shadowRootRef = useRef<ShadowRoot | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [selectedEl, setSelectedEl] = useState<HTMLElement | null>(null);
 
   // Parse HTML and add node path attributes
   const htmlWithPaths = useRef<string>("");
@@ -72,88 +72,12 @@ export default function VisualHTMLPane({
     htmlWithPaths.current = addNodePathAttributes(root);
   }, [html]);
 
-  // Initialize shadow DOM and render HTML
+  // Render HTML content
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!contentRef.current) return;
 
-    // Handle existing shadow root - can't attach a new one if one exists
-    if (shadowRootRef.current) {
-      // Clear the existing shadow root's content
-      while (shadowRootRef.current.firstChild) {
-        shadowRootRef.current.removeChild(shadowRootRef.current.firstChild);
-      }
-    } else {
-      // Only attach a new shadow root if one doesn't exist
-      const newShadowRoot = containerRef.current.attachShadow({ mode: "open" });
-      shadowRootRef.current = newShadowRoot;
-    }
-
-    const shadowRoot = shadowRootRef.current;
-
-    // Add base styles to shadow DOM
-    const styleSheet = document.createElement("style");
-    styleSheet.textContent = `
-      :host {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-      
-      * {
-        box-sizing: border-box;
-      }
-      
-      body {
-        margin: 0;
-        padding: 16px;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 14px;
-        line-height: 1.6;
-        color: #1f2937;
-        background: #ffffff;
-      }
-      
-      /* Base element styling */
-      h1, h2, h3, h4, h5, h6 {
-        margin: 1.2em 0 0.6em 0;
-        font-weight: 600;
-      }
-      
-      p {
-        margin: 0.8em 0;
-      }
-      
-      ul, ol {
-        margin: 0.8em 0;
-        padding-left: 2em;
-      }
-      
-      li {
-        margin: 0.4em 0;
-      }
-      
-      /* Selection highlight - blue outline */
-      [data-node-path].inspector-selected {
-        outline: 2px solid #2563eb !important;
-        outline-offset: 2px;
-        background-color: rgba(37, 99, 235, 0.05) !important;
-      }
-      
-      /* Hover state - subtle background */
-      [data-node-path].inspector-hoverable {
-        transition: background-color 0.15s ease-in-out;
-      }
-      
-      [data-node-path].inspector-hoverable:hover:not(.inspector-selected) {
-        background-color: rgba(59, 130, 246, 0.08) !important;
-      }
-    `;
-    shadowRoot.appendChild(styleSheet);
-
-    // Create wrapper for HTML content
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = htmlWithPaths.current;
-    shadowRoot.appendChild(wrapper);
+    // Set the HTML content
+    contentRef.current.innerHTML = htmlWithPaths.current;
 
     // Set up click tracking
     const handleElementClick = (event: Event) => {
@@ -165,15 +89,13 @@ export default function VisualHTMLPane({
         const nodePath = nodePathEl.getAttribute("data-node-path");
         if (nodePath) {
           // Remove previous selection highlight
-          const previousSelected = shadowRoot.querySelector(
-            ".inspector-selected"
-          );
-          if (previousSelected) {
-            previousSelected.classList.remove("inspector-selected");
+          if (selectedEl) {
+            selectedEl.classList.remove("inspector-selected");
           }
 
           // Add highlight to new selection
           nodePathEl.classList.add("inspector-selected");
+          setSelectedEl(nodePathEl);
 
           // Call parent callback with node path
           onElementClick(nodePath);
@@ -184,58 +106,168 @@ export default function VisualHTMLPane({
       }
     };
 
-    // Add click listener to shadow DOM
-    wrapper.addEventListener("click", handleElementClick, true);
-
-    // Add hover effect to all elements with node paths
-    const addHoverEffect = (el: Element) => {
-      if (el.hasAttribute("data-node-path")) {
-        el.classList.add("inspector-hoverable");
-      }
-      // Recursively add to children
-      for (let i = 0; i < el.children.length; i++) {
-        addHoverEffect(el.children[i]);
-      }
-    };
-    addHoverEffect(wrapper);
+    // Add click listener
+    contentRef.current.addEventListener("click", handleElementClick, true);
 
     return () => {
-      wrapper.removeEventListener("click", handleElementClick, true);
+      contentRef.current?.removeEventListener("click", handleElementClick, true);
     };
-  }, [html, onElementClick]);
+  }, [html, onElementClick, selectedEl]);
 
   // Handle external selection (when parent sets selectedNodePath)
   useEffect(() => {
-    if (!shadowRootRef.current || !selectedNodePath) return;
+    if (!contentRef.current || !selectedNodePath) return;
 
     // Clear previous selection
-    const previousSelected = shadowRootRef.current.querySelector(
-      ".inspector-selected"
-    );
-    if (previousSelected) {
-      previousSelected.classList.remove("inspector-selected");
+    if (selectedEl) {
+      selectedEl.classList.remove("inspector-selected");
     }
 
     // Find element with matching node path
-    const selectedEl = shadowRootRef.current.querySelector(
+    const selectedElement = contentRef.current.querySelector(
       `[data-node-path="${selectedNodePath}"]`
-    );
-    if (selectedEl) {
-      selectedEl.classList.add("inspector-selected");
+    ) as HTMLElement | null;
+
+    if (selectedElement) {
+      selectedElement.classList.add("inspector-selected");
+      setSelectedEl(selectedElement);
       // Scroll into view
-      selectedEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      selectedElement.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  }, [selectedNodePath]);
+  }, [selectedNodePath, selectedEl]);
 
   return (
-    <div className="w-full h-full bg-white rounded-lg overflow-hidden border border-gray-200 flex flex-col">
+    <div className="w-full h-full flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200">
       <div
-        ref={containerRef}
-        className="w-full flex-1 overflow-auto bg-white"
+        ref={contentRef}
+        className="flex-1 overflow-auto p-8"
         style={{
           scrollBehavior: "smooth",
+          color: "#1f2937",
         }}
-      />
+      >
+        {/* Content will be rendered here via innerHTML */}
+      </div>
+      <style>{`
+        [data-node-path] {
+          transition: all 0.15s ease-in-out;
+          cursor: pointer;
+        }
+
+        [data-node-path]:hover {
+          background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        [data-node-path].inspector-selected {
+          outline: 2px solid #2563eb;
+          outline-offset: 2px;
+          background-color: rgba(37, 99, 235, 0.15);
+        }
+
+        /* Typography improvements */
+        h1, h2, h3, h4, h5, h6 {
+          color: #111827;
+          font-weight: 600;
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
+          line-height: 1.3;
+        }
+
+        h1 { font-size: 2em; }
+        h2 { font-size: 1.5em; }
+        h3 { font-size: 1.25em; }
+        h4 { font-size: 1.1em; }
+        h5 { font-size: 1em; }
+        h6 { font-size: 0.9em; }
+
+        p {
+          margin: 1em 0;
+          line-height: 1.7;
+        }
+
+        ul, ol {
+          margin: 1em 0;
+          padding-left: 2em;
+          line-height: 1.7;
+        }
+
+        li {
+          margin: 0.5em 0;
+        }
+
+        a {
+          color: #2563eb;
+          text-decoration: none;
+          font-weight: 500;
+        }
+
+        a:hover {
+          text-decoration: underline;
+        }
+
+        strong, b {
+          font-weight: 600;
+          color: #111827;
+        }
+
+        em, i {
+          font-style: italic;
+        }
+
+        code {
+          background-color: #f3f4f6;
+          padding: 0.2em 0.4em;
+          border-radius: 0.25em;
+          font-family: monospace;
+          font-size: 0.9em;
+        }
+
+        pre {
+          background-color: #1f2937;
+          color: #e5e7eb;
+          padding: 1em;
+          border-radius: 0.5em;
+          overflow-x: auto;
+          margin: 1em 0;
+        }
+
+        blockquote {
+          border-left: 4px solid #d1d5db;
+          padding-left: 1em;
+          margin-left: 0;
+          color: #6b7280;
+          font-style: italic;
+        }
+
+        table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 1em 0;
+        }
+
+        table td, table th {
+          border: 1px solid #e5e7eb;
+          padding: 0.75em;
+          text-align: left;
+        }
+
+        table th {
+          background-color: #f9fafb;
+          font-weight: 600;
+        }
+
+        hr {
+          border: none;
+          border-top: 1px solid #e5e7eb;
+          margin: 2em 0;
+        }
+
+        img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.5em;
+        }
+      `}</style>
     </div>
   );
 }
