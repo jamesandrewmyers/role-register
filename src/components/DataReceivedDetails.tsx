@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import HtmlViewer from "./HtmlViewer";
 import ValueMappingWorkspace from "./ValueMappingWorkspace";
+import DataReceivedInspector from "./DataReceivedInspector";
 import { parseHtml, htmlToPlainText, parseVisualSections } from "@/lib/htmlParser";
 import { extractDescriptionDetails } from "@/lib/listingDescriptionExtractor";
 import type { DataReceivedDTO } from "@/dto/dataReceived.dto";
@@ -20,14 +21,13 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
   const [showSections, setShowSections] = useState(false);
   const [showExtractedDetails, setShowExtractedDetails] = useState(false);
   const [showMappingWorkspace, setShowMappingWorkspace] = useState(false);
-  const [mappings, setMappings] = useState<any[]>([]);
+  const [showInspector, setShowInspector] = useState(false);
+  const [mappings, setMappings] = useState<Record<string, unknown>[]>([]);
   const [mappingsLoading, setMappingsLoading] = useState(false);
-
-  if (!item) return null;
 
   // Load mappings when workspace is opened
   useEffect(() => {
-    if (!showMappingWorkspace) return;
+    if (!showMappingWorkspace || !item) return;
 
     const loadMappings = async () => {
       try {
@@ -47,7 +47,7 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
     loadMappings();
   }, [showMappingWorkspace]);
 
-  const handleSaveMapping = async (mappingData: any) => {
+  const handleSaveMapping = async (mappingData: Record<string, unknown>) => {
     try {
       const response = await fetch('/api/mappings', {
         method: 'POST',
@@ -113,6 +113,8 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
   
   const entries = Object.entries(displayData).filter(([key, value]) => value !== undefined && value !== null);
 
+  if (!item) return null;
+
   return (
     <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -127,6 +129,25 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
           <div className="flex items-center gap-3">
             {item.html && (
               <>
+                <button
+                  onClick={() => setShowInspector(true)}
+                  className="p-2 bg-blue-500/30 hover:bg-blue-500/50 rounded-lg border border-blue-400/30 transition-colors"
+                  title="Open DOM Inspector"
+                >
+                  <svg
+                    className="w-5 h-5 text-blue-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
+                  </svg>
+                </button>
                 <button
                   onClick={() => setShowExtractedDetails(true)}
                   className="p-2 bg-purple-500/30 hover:bg-purple-500/50 rounded-lg border border-purple-400/30 transition-colors"
@@ -255,6 +276,14 @@ export default function DataReceivedDetails({ item, onClose }: DataReceivedDetai
           ))}
         </div>
       </div>
+      {showInspector && item.html && (
+        <DataReceivedInspector 
+          dataReceivedId={item.id}
+          html={item.html}
+          url={item.url}
+          onClose={() => setShowInspector(false)} 
+        />
+      )}
       {showHtmlViewer && item.html && (
         <HtmlViewer html={item.html} onClose={() => setShowHtmlViewer(false)} />
       )}
