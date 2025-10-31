@@ -147,18 +147,19 @@ export default function VisualHTMLPane({
       </div>
       <style>{`
         [data-node-path] {
-          transition: all 0.15s ease-in-out;
+          transition: background-color 0.15s ease-in-out;
           cursor: pointer;
+          position: relative;
         }
 
         [data-node-path]:hover {
-          background-color: rgba(59, 130, 246, 0.15);
+          background-color: rgba(59, 130, 246, 0.1);
         }
 
         [data-node-path].inspector-selected {
-          outline: 2px solid #2563eb;
-          outline-offset: 2px;
           background-color: rgba(37, 99, 235, 0.25);
+          box-shadow: inset 0 0 0 2px #2563eb;
+          border-radius: 2px;
         }
 
         /* Typography improvements */
