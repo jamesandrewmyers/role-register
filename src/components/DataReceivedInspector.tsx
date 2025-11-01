@@ -24,7 +24,7 @@ export default function DataReceivedInspector({
       onClick={onClose}
     >
       <div
-        className="bg-gradient-to-br from-slate-800 to-purple-900 rounded-2xl border border-purple-400/30 shadow-2xl w-full h-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-gradient-to-br from-slate-800 to-purple-900 rounded-2xl border border-purple-400/30 shadow-2xl w-[95%] h-[95%] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

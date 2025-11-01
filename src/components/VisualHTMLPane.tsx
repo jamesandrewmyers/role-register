@@ -214,11 +214,35 @@ export default function VisualHTMLPane({
           color: #60a5fa;
           text-decoration: none;
           font-weight: 500;
+          pointer-events: none;
         }
 
         a:hover {
           text-decoration: underline;
           color: #93c5fd;
+        }
+
+        /* Style rendered buttons */
+        [data-node-path] button {
+          background-color: #4b5563;
+          color: #e5e7eb;
+          border: 1px solid #6b7280;
+          padding: 0.5em 1em;
+          border-radius: 0.25em;
+          cursor: not-allowed;
+          font-weight: 500;
+          pointer-events: none;
+        }
+
+        [data-node-path] button:hover {
+          background-color: #5a6573;
+        }
+
+        /* Make other rendered interactive elements non-interactive */
+        [data-node-path] input,
+        [data-node-path] select,
+        [data-node-path] textarea {
+          pointer-events: none;
         }
 
         strong, b {
