@@ -51,7 +51,7 @@ function TreeNode({
     if (isSelected && nodeRef.current && treeContainerRef.current) {
       nodeRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-  }, [isSelected]);
+  }, [isSelected, treeContainerRef]);
 
   if (node.type === "text") {
     const preview =
@@ -186,16 +186,20 @@ export default function DOMTreePane({
     };
   }, [htmlString]);
 
-  // Auto-expand ancestors when node is selected
+  // Auto-expand all ancestors when node is selected
   useEffect(() => {
     if (!selectedNodePath) return;
 
-    const pathIndices = selectedNodePath.split(".").filter((x) => x);
-    const newExpandedPaths = new Set(expandedPaths);
+    const newExpandedPaths = new Set<string>();
+    
+    // Always expand the root (empty string path)
+    newExpandedPaths.add("");
 
-    // Expand all ancestors
-    for (let i = 1; i <= pathIndices.length; i++) {
-      newExpandedPaths.add(pathIndices.slice(0, i).join("."));
+    // Expand every ancestor node in the path
+    const pathParts = selectedNodePath.split(".").filter((x) => x);
+    for (let i = 0; i < pathParts.length; i++) {
+      const ancestorPath = pathParts.slice(0, i + 1).join(".");
+      newExpandedPaths.add(ancestorPath);
     }
 
     setExpandedPaths(newExpandedPaths);
