@@ -77,8 +77,65 @@ export default function VisualHTMLPane({
   useEffect(() => {
     if (!contentRef.current) return;
 
-    // Set the HTML content
+    // Set the HTML content (without trying to inject styles via string replacement)
     contentRef.current.innerHTML = htmlWithPaths.current;
+
+    // Create and inject a style element directly into the DOM with scoped selectors
+    const styleElement = document.createElement("style");
+    styleElement.textContent = `
+      [data-visual-pane-container] .visually-hidden { display: none !important; }
+      [data-visual-pane-container] img { max-width: 100% !important; height: auto !important; }
+      [data-visual-pane-container] button {
+        background-color: #3b82f6 !important;
+        color: #ffffff !important;
+        border: 1px solid #1e40af !important;
+        padding: 0.35em 0.75em !important;
+        margin: 0.25em 0 !important;
+        border-radius: 0.375em !important;
+        cursor: not-allowed !important;
+        font-weight: 500 !important;
+        font-size: 0.95em !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.5em !important;
+        line-height: 1.2 !important;
+        height: auto !important;
+        min-height: auto !important;
+        white-space: nowrap !important;
+      }
+      [data-visual-pane-container] button:hover { background-color: #2563eb !important; }
+      [data-visual-pane-container] button:active { background-color: #1d4ed8 !important; }
+      [data-visual-pane-container] input, [data-visual-pane-container] select, [data-visual-pane-container] textarea { pointer-events: none !important; }
+      [data-visual-pane-container] a { pointer-events: none !important; }
+      [data-visual-pane-container] ul { list-style: disc !important; margin-left: 2em !important; }
+      [data-visual-pane-container] ol { list-style: decimal !important; margin-left: 2em !important; }
+      [data-visual-pane-container] li { display: list-item !important; }
+    `;
+    contentRef.current.appendChild(styleElement);
+
+    // Add onclick handlers to all buttons to prevent their default behavior
+    const buttons = contentRef.current.querySelectorAll("button");
+    buttons.forEach((btn) => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      };
+
+      // Detect empty buttons and add visual indicator
+      if (!btn.textContent?.trim() && !btn.innerHTML.includes("svg")) {
+        btn.setAttribute("data-empty", "true");
+        btn.textContent = "Button";
+      }
+    });
+
+    // Add error handlers to images
+    const images = contentRef.current.querySelectorAll("img");
+    images.forEach((img) => {
+      img.addEventListener("error", () => {
+        img.setAttribute("data-broken", "true");
+      });
+    });
 
     // Re-apply selection if we have one stored
     if (selectedNodePathRef.current) {
@@ -98,6 +155,7 @@ export default function VisualHTMLPane({
 
       // Find the closest element with data-node-path attribute
       const nodePathEl = target.closest("[data-node-path]");
+
       if (nodePathEl && nodePathEl instanceof HTMLElement) {
         const nodePath = nodePathEl.getAttribute("data-node-path");
         if (nodePath) {
@@ -116,7 +174,7 @@ export default function VisualHTMLPane({
           // Call parent callback with node path
           onElementClick(nodePath);
 
-          // Prevent event from bubbling to parent elements
+          // Prevent event from bubbling
           event.stopPropagation();
         }
       }
@@ -157,6 +215,7 @@ export default function VisualHTMLPane({
     <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-800 to-slate-900 rounded-lg overflow-hidden border border-purple-400/20">
       <div
         ref={contentRef}
+        data-visual-pane-container
         className="flex-1 overflow-auto p-8"
         style={{
           color: "#e5e7eb",
@@ -175,143 +234,6 @@ export default function VisualHTMLPane({
           background-color: rgba(37, 99, 235, 0.25) !important;
           box-shadow: inset 0 0 0 2px #2563eb !important;
           border-radius: 2px;
-        }
-
-        /* Typography improvements */
-        h1, h2, h3, h4, h5, h6 {
-          color: #f0f9ff;
-          font-weight: 600;
-          margin-top: 1.5em;
-          margin-bottom: 0.5em;
-          line-height: 1.3;
-        }
-
-        h1 { font-size: 2em; }
-        h2 { font-size: 1.5em; }
-        h3 { font-size: 1.25em; }
-        h4 { font-size: 1.1em; }
-        h5 { font-size: 1em; }
-        h6 { font-size: 0.9em; }
-
-        p {
-          margin: 1em 0;
-          line-height: 1.7;
-          color: #d1d5db;
-        }
-
-        ul, ol {
-          margin: 1em 0;
-          padding-left: 2em;
-          line-height: 1.7;
-          color: #d1d5db;
-        }
-
-        li {
-          margin: 0.5em 0;
-        }
-
-        a {
-          color: #60a5fa;
-          text-decoration: none;
-          font-weight: 500;
-          pointer-events: none;
-        }
-
-        a:hover {
-          text-decoration: underline;
-          color: #93c5fd;
-        }
-
-        /* Style rendered buttons */
-        [data-node-path] button {
-          background-color: #4b5563;
-          color: #e5e7eb;
-          border: 1px solid #6b7280;
-          padding: 0.5em 1em;
-          border-radius: 0.25em;
-          cursor: not-allowed;
-          font-weight: 500;
-          pointer-events: none;
-        }
-
-        [data-node-path] button:hover {
-          background-color: #5a6573;
-        }
-
-        /* Make other rendered interactive elements non-interactive */
-        [data-node-path] input,
-        [data-node-path] select,
-        [data-node-path] textarea {
-          pointer-events: none;
-        }
-
-        strong, b {
-          font-weight: 600;
-          color: #f0f9ff;
-        }
-
-        em, i {
-          font-style: italic;
-          color: #d1d5db;
-        }
-
-        code {
-          background-color: #1f2937;
-          color: #a7f3d0;
-          padding: 0.2em 0.4em;
-          border-radius: 0.25em;
-          font-family: monospace;
-          font-size: 0.9em;
-        }
-
-        pre {
-          background-color: #0f172a;
-          color: #e2e8f0;
-          padding: 1em;
-          border-radius: 0.5em;
-          overflow-x: auto;
-          margin: 1em 0;
-          border: 1px solid #334155;
-        }
-
-        blockquote {
-          border-left: 4px solid #7c3aed;
-          padding-left: 1em;
-          margin-left: 0;
-          color: #a78bfa;
-          font-style: italic;
-        }
-
-        table {
-          border-collapse: collapse;
-          width: 100%;
-          margin: 1em 0;
-        }
-
-        table td, table th {
-          border: 1px solid #475569;
-          padding: 0.75em;
-          text-align: left;
-          color: #d1d5db;
-        }
-
-        table th {
-          background-color: #1e293b;
-          font-weight: 600;
-          color: #f0f9ff;
-        }
-
-        hr {
-          border: none;
-          border-top: 1px solid #475569;
-          margin: 2em 0;
-        }
-
-        img {
-          max-width: 100%;
-          height: auto;
-          border-radius: 0.5em;
-          border: 1px solid #475569;
         }
       `}</style>
     </div>

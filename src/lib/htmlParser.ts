@@ -31,7 +31,7 @@ export interface HtmlNode {
  */
 export function parseHtml(html: string): HtmlNode[] {
   const nodes: HtmlNode[] = [];
-  const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)[^>]*>/g;
+  const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9-]*)[^>]*>/g;
   const selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
   
   let lastIndex = 0;
