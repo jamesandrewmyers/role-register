@@ -21,6 +21,7 @@ function TreeNode({
   expandedPaths,
   onToggleExpanded,
   treeContainerRef,
+  isParentSelected = false,
 }: {
   node: HtmlNode;
   path: string;
@@ -30,8 +31,9 @@ function TreeNode({
   expandedPaths: Set<string>;
   onToggleExpanded: (path: string) => void;
   treeContainerRef: React.RefObject<HTMLDivElement>;
+  isParentSelected?: boolean;
 }) {
-  const isSelected = path === selectedPath;
+  const isSelected = path === selectedPath || isParentSelected;
   const isExpanded = expandedPaths.has(path);
   const hasChildren = node.children && node.children.length > 0;
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -101,6 +103,9 @@ function TreeNode({
     }
 
     const attrDisplay = attrStrings.length > 0 ? attrStrings.join(" ") : "";
+    const selectedClass = isSelected
+      ? "bg-blue-600/40 border-l-4 border-blue-400 text-blue-50"
+      : "hover:bg-purple-500/10 text-gray-300";
 
     return (
       <>
@@ -108,11 +113,7 @@ function TreeNode({
           ref={nodeRef}
           data-path={path}
           style={{ paddingLeft: `${depth * 20}px` }}
-          className={`py-1 px-3 text-sm font-mono cursor-pointer transition-colors ${
-            isSelected
-              ? "bg-blue-600/40 border-l-4 border-blue-400 text-blue-50"
-              : "hover:bg-purple-500/10 text-gray-300"
-          }`}
+          className={`py-1 px-3 text-sm font-mono cursor-pointer transition-colors ${selectedClass}`}
           onClick={handleNodeClick}
         >
           {hasChildren && (
@@ -147,11 +148,13 @@ function TreeNode({
                 expandedPaths={expandedPaths}
                 onToggleExpanded={onToggleExpanded}
                 treeContainerRef={treeContainerRef}
+                // Pass parent's selected state so children highlight when parent is selected
+                isParentSelected={isSelected}
               />
             ))}
             <div
               style={{ paddingLeft: `${depth * 20}px` }}
-              className="py-1 px-3 text-sm font-mono text-blue-300"
+              className={`py-1 px-3 text-sm font-mono ${selectedClass}`}
             >
               &lt;/{node.tag}&gt;
             </div>
