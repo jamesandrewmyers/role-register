@@ -141,6 +141,9 @@ Backups are stored in the `data/` directory with timestamps (e.g., `role_registe
 - `npm test` - Run test suite
 - `npm run test:ui` - Run tests with UI
 - `npm run test:coverage` - Run tests with coverage report
+- `npm run docs` - Generate API documentation (TypeDoc and OpenAPI)
+- `npm run docs:typedoc` - Generate TypeDoc HTML documentation
+- `npm run docs:openapi` - Generate OpenAPI/Swagger documentation
 
 ### Testing
 
@@ -153,6 +156,66 @@ Run tests:
 ```bash
 npm test
 ```
+
+---
+
+## Documentation
+
+### API Documentation
+
+**OpenAPI/Swagger Documentation** provides interactive API documentation:
+
+```bash
+npm run docs:openapi
+```
+
+Then open `docs/openapi/index.html` in your browser to view the Swagger UI with:
+- All available endpoints
+- Request/response schemas
+- Try-it-out functionality
+- Example requests
+
+**Key Endpoints:**
+- `GET /api/role-listing` - Get role listing by dataReceivedId
+- `GET /api/role-listing/{id}` - Get role listing by ID
+- `GET /api/role-listing/{id}/line-items` - Get line items for a listing
+- `GET /api/mappings` - List value mappings with filtering
+- `POST /api/mappings` - Create a new value mapping
+- `POST /api/import` - Import job data from Chrome extension
+- `GET /api/dashboard` - Get dashboard aggregated data
+
+### Code Documentation
+
+**TypeDoc Documentation** generates HTML API documentation from TypeScript code:
+
+```bash
+npm run docs:typedoc
+```
+
+Then open `docs/api/index.html` in your browser to browse:
+- Service layer documentation
+- Entity interfaces and types
+- DTO definitions
+- Component documentation
+
+### Code Structure & TSDoc
+
+The codebase uses comprehensive **TSDoc/JSDoc** comments:
+
+- **Services** (`src/services/`): Business logic with parameter and return type documentation
+- **Entities** (`src/domain/entities/`): Domain models with property descriptions
+- **DTOs** (`src/dto/`): Data transfer objects with field documentation
+- **Libraries** (`src/lib/`): Utility functions with examples (e.g., `htmlParser.ts`)
+- **Components** (`src/components/`): React components with prop documentation
+
+### Documentation Standards
+
+When adding new code:
+
+1. **Functions/Methods**: Include JSDoc with `@param`, `@returns`, and `@example` tags
+2. **Interfaces/Types**: Document all properties with `@property` or inline comments
+3. **Classes**: Include class-level documentation and method documentation
+4. **Complex Logic**: Add inline comments explaining "why" not "what"
 
 ---
 

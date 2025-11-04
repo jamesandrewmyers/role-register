@@ -1,3 +1,29 @@
+/**
+ * Represents a node in an HTML document tree.
+ *
+ * @interface HtmlNode
+ * @property {string} type - The type of node: 'element', 'text', or 'comment'
+ * @property {string} [tag] - The HTML tag name (only for element nodes)
+ * @property {string} [content] - The text content (only for text nodes)
+ * @property {Record<string, string>} [attributes] - HTML attributes (only for element nodes)
+ * @property {HtmlNode[]} [children] - Child nodes (only for element nodes)
+ *
+ * @example
+ * // Element node
+ * const div: HtmlNode = {
+ *   type: 'element',
+ *   tag: 'div',
+ *   attributes: { class: 'container' },
+ *   children: [...]
+ * }
+ *
+ * @example
+ * // Text node
+ * const text: HtmlNode = {
+ *   type: 'text',
+ *   content: 'Hello World'
+ * }
+ */
 export interface HtmlNode {
   type: 'element' | 'text' | 'comment';
   tag?: string;
@@ -160,6 +186,29 @@ export function htmlToPlainText(nodes: HtmlNode[]): string {
   return result.trim();
 }
 
+/**
+ * Represents a visually distinct section within an HTML document.
+ * Particularly useful for parsing job listings and identifying sections like
+ * responsibilities, requirements, qualifications, etc.
+ *
+ * @interface VisualSection
+ * @property {string} type - The classification of the section
+ * @property {string} [label] - Human-readable label for the section
+ * @property {string} [lineItemType] - The type of line items in this section
+ * @property {string} content - The text content of the section
+ * @property {HtmlNode} node - The underlying HTML node for this section
+ * @property {number} confidence - Confidence score (0-1) indicating classification accuracy
+ *
+ * @example
+ * const section: VisualSection = {
+ *   type: 'section',
+ *   label: 'Responsibilities',
+ *   lineItemType: 'responsibilities',
+ *   content: 'Manage team projects...',
+ *   node: {...},
+ *   confidence: 0.8
+ * }
+ */
 export interface VisualSection {
   type: 'title' | 'summary' | 'section' | 'list' | 'other' | 'unknown';
   label?: string;

@@ -1,0 +1,25 @@
+{
+  "entryPoints": ["src"],
+  "out": "docs/api",
+  "readme": "README.md",
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "node_modules"],
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "includeVersion": true,
+  "gitRevision": "main",
+  "name": "Role Register - API Documentation",
+  "theme": "default",
+  "commentStyle": "jsdoc",
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Services",
+    "Entities",
+    "DTOs",
+    "Mappers",
+    "Components",
+    "Libraries",
+    "Domain",
+    "Other"
+  ]
+}
