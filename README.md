@@ -163,17 +163,31 @@ npm test
 
 ### API Documentation
 
-**OpenAPI/Swagger Documentation** provides interactive API documentation:
+**Interactive API Documentation** is available at:
+
+```
+http://localhost:3000/docs
+```
+
+Once the application is running, navigate to `/docs` in your browser to view the Swagger UI with:
+- All available endpoints
+- Request/response schemas
+- Try-it-out functionality
+- Example requests
+
+**Generating Documentation Files** (optional):
+
+If you want to generate static documentation files:
 
 ```bash
 npm run docs:openapi
 ```
 
-Then open `docs/openapi/index.html` in your browser to view the Swagger UI with:
-- All available endpoints
-- Request/response schemas
-- Try-it-out functionality
-- Example requests
+This creates `docs/openapi/index.html` which can be opened offline, or access the JSON spec at:
+
+```
+http://localhost:3000/api/docs
+```
 
 **Key Endpoints:**
 - `GET /api/role-listing` - Get role listing by dataReceivedId

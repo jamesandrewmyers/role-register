@@ -5,7 +5,7 @@ import { parseHtml, type HtmlNode } from "@/lib/htmlParser";
 
 interface VisualHTMLPaneProps {
   html: string;
-  selectedNodePath?: string;
+  selectedNodePath?: string | null;
   onElementClick: (nodePath: string) => void;
 }
 
